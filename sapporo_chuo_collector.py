@@ -815,75 +815,106 @@ def collect_movie_theaters() -> Iterable[EventItem]:
     log.info(f"映画館(上映中) 取得タイトル一覧: {all_titles}")
 
 
-def collect_upcoming_movies() -> Iterable[EventItem]:
-    """今後2ヶ月以内に公開予定の映画（🍿 公開予定映画）。映画館ページ内にある
-    「公開予定」リストから、タイトルと公開日を抽出する。アニメらしきタイトルは
-    あわせて🎮アニメにも表示されるようタグを追加する。同じ映画が複数の映画館で
-    公開予定になっている場合は1件にまとめ、劇場ごとのリンクを個別に持たせる。"""
-    date_re = re.compile(r"\d{4}年\d{1,2}月\d{1,2}日公開")
-    today = datetime.now().date()
+_COMING_SOON_INFO_RE = re.compile(r"^(\d{4})年(\d{1,2})月(\d{1,2})日(?:公開|再上映)(?:、\d+分)?(?:、(.+))?$")
 
-    # title -> {"date_text": 公開日の文字列, "theaters": [(theater_name, url), ...]}
-    upcoming: dict[str, dict] = {}
 
-    for theater_id, theater_name in SAPPORO_MOVIE_THEATERS.items():
-        url = f"https://press.moviewalker.jp/{theater_id}/schedule/"
-        soup = fetch(url)
-        if soup is None:
+def _parse_coming_soon_page(soup: BeautifulSoup):
+    """MOVIE WALKER PRESSの「公開予定」月別ページから (タイトル, href, 年, 月, 日, ジャンル文字列) を抽出する。
+    ページの並び順（タイトル文字列の直後に「YYYY年M月D日公開、上映時間、ジャンル」の行が続く）
+    だけを頼りにしているため、DOMのクラス名変更にはある程度強い。"""
+    href_by_title = {}
+    for a in soup.find_all("a", href=re.compile(r"^/mv\d+/?$")):
+        t = clean(a.get_text())
+        if t and t not in href_by_title:
+            href_by_title[t] = a["href"]
+
+    strings = list(soup.stripped_strings)
+    results = []
+    for i, s in enumerate(strings):
+        m = _COMING_SOON_INFO_RE.match(s)
+        if not m or i < 1:
             continue
+        title = strings[i - 1]
+        if not title or len(title) > 80:
+            continue
+        y, mo, d, genre = m.groups()
+        href = href_by_title.get(title)
+        results.append((title, href, int(y), int(mo), int(d), genre or ""))
+    return results
 
-        # タイトル文字列 -> 映画詳細ページURL の対応を、分かる範囲で作っておく
-        href_by_text = {}
-        for a in soup.find_all("a", href=re.compile(r"^/mv\d+/?$")):
-            t = clean(a.get_text())
-            if t:
-                href = a["href"]
-                href_by_text[t] = href if href.startswith("http") else f"https://press.moviewalker.jp{href}"
 
-        strings = list(soup.stripped_strings)
-        for i, s in enumerate(strings):
-            if not date_re.fullmatch(s) or i < 1:
-                continue
-            title = strings[i - 1]
-            if not title or not (2 <= len(title) <= 60) or date_re.fullmatch(title):
-                continue
+def collect_upcoming_movies() -> Iterable[EventItem]:
+    """今後2ヶ月以内に全国で公開予定の映画（🍿 公開予定映画）。
+    MOVIE WALKER PRESSの月別「公開予定」ページ（例: /list/coming/2026/09/）を、
+    対象期間が含まれる月×ページ送りぶんだけ巡回する。このページにはジャンル情報が
+    明記されているため、タイトルのキーワード判定に加えてジャンルに「アニメ」が
+    含まれるかどうかでもアニメ判定を行う（キーワード判定より確実）。
+    全国版のリストのため、必ずしも札幌の劇場での上映が確定しているとは限らない点に注意。"""
+    today = datetime.now().date()
+    window_end = today + timedelta(days=60)
 
-            m = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日公開", s)
-            try:
-                release_date = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-            except Exception:
-                continue
-            if release_date < today or release_date > today + timedelta(days=60):
-                continue  # 2ヶ月より先、または既に公開済みのものは対象外
+    # 対象期間をカバーする年月を列挙（当月から、window_endの月まで）
+    months = []
+    y, m = today.year, today.month
+    while date(y, m, 1) <= window_end:
+        months.append((y, m))
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
 
-            entry = upcoming.setdefault(title, {"date_text": s, "theaters": []})
-            theater_url = href_by_text.get(title, url)
-            if not any(tn == theater_name for tn, _ in entry["theaters"]):
-                entry["theaters"].append((theater_name, theater_url))
+    upcoming: dict[str, dict] = {}  # title -> {"date": date, "genre": str, "url": str}
+    all_found_before_filter = []
+
+    for y, m in months:
+        for page in range(1, 6):  # ページ送り。空振りが続いたら打ち切る
+            page_url = (
+                f"https://press.moviewalker.jp/list/coming/{y}/{m:02d}/"
+                if page == 1
+                else f"https://press.moviewalker.jp/list/coming/{y}/{m:02d}/p{page}/"
+            )
+            soup = fetch(page_url)
+            if soup is None:
+                break
+            entries = _parse_coming_soon_page(soup)
+            if not entries:
+                break
+            for title, href, ey, em, ed, genre in entries:
+                all_found_before_filter.append((title, f"{ey}年{em}月{ed}日", genre))
+                try:
+                    release_date = date(ey, em, ed)
+                except Exception:
+                    continue
+                if release_date < today or release_date > window_end:
+                    continue
+                if title in upcoming:
+                    continue
+                url = f"https://press.moviewalker.jp{href}" if href else page_url
+                upcoming[title] = {"date": release_date, "genre": genre, "url": url}
 
     count = 0
     anime_count = 0
     for title, info in upcoming.items():
         tags = ["公開予定映画"]
-        if any(hint in title for hint in ANIME_MOVIE_HINTS):
+        is_anime = "アニメ" in info["genre"] or any(hint in title for hint in ANIME_MOVIE_HINTS)
+        if is_anime:
             tags.append("劇場版")
             anime_count += 1
 
-        links = [{"label": tn, "url": u} for tn, u in info["theaters"]]
-        theater_names = "・".join(tn for tn, _ in info["theaters"])
-        primary_url = info["theaters"][0][1] if info["theaters"] else "https://press.moviewalker.jp/"
+        date_text = f"{info['date'].year}年{info['date'].month}月{info['date'].day}日公開"
+        genre_text = f"（{info['genre']}）" if info["genre"] else ""
 
         count += 1
         yield EventItem(
-            source="映画館(公開予定)",
+            source="映画館(公開予定・全国版)",
             title=title[:80],
-            url=primary_url,
-            date_text=info["date_text"],
-            place=f"{theater_names}（中央区）で公開予定",
+            url=info["url"],
+            date_text=date_text,
+            place=f"全国公開予定{genre_text}　※札幌での上映は劇場発表をご確認ください",
             tags=tags,
-            links=links,
         )
     log.info(f"映画館(公開予定): {count}件（うちアニメ映画と判定: {anime_count}件）")
+    log.info(f"映画館(公開予定) フィルタ前の全件({len(all_found_before_filter)}件): {all_found_before_filter[:30]}...")
 
 
 SOURCES = {
