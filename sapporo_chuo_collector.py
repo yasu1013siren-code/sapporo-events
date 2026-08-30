@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
-sapporo_chuo_collector.py (Ver.6.2)
-==================================
+sapporo_chuo_collector.py
+==========================
 札幌市中央区の「飲食・アニメ・音楽ライブ」情報を毎日自動収集するツール。
 
 【できること】
@@ -41,14 +41,9 @@ sapporo_chuo_collector.py (Ver.6.2)
      https://www.maruiimai.mistore.jp/sapporo.html
      （大丸札幌店は催事ページがJavaScriptで動的生成されるため、今回は
       静的HTMLを取得するこのスクリプトでは対応できていません）
-  8. 映画情報（公式優先）
-     - ローソン・ユナイテッドシネマ札幌 公式「公開予定作品」
-       https://www.unitedcinemas.jp/sapporo/movie.php
-     - TOHOシネマズすすきの 公式「前売券情報」
-       https://www.tohotheater.jp/theater/089/info/advanceticket.html
-     - MOVIE WALKER PRESS（バックアップ）
-       https://press.moviewalker.jp/theater/108/
-     公式情報を優先し、1サイトが取得できなくても他の情報源から補完します。
+  8. 札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/
+     シアターキノ/TOHOシネマズすすきの。いずれも中央区）の上映中アニメ映画
+     https://press.moviewalker.jp/theater/108/
 
   必要に応じて SOURCES 辞書に情報源を追加/削除してください。
   カテゴリ判定の基準は CATEGORY_INCLUDE / CATEGORY_EXCLUDE で調整できます。
@@ -125,29 +120,8 @@ HTML_PATH = DATA_DIR / "index.html"
 REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; SapporoChuoCollector/1.0; +personal-use-script)"
 }
-# Ver.6: サイトごとにタイムアウトを設定し、応答しないサイトを自動スキップする。
-# 全体を止めないことを最優先に、短めのタイムアウト＋少回数リトライで運用。
-REQUEST_TIMEOUT = 15  # 未登録ドメインの標準タイムアウト（秒）
-REQUEST_RETRIES = 1   # 初回＋1回だけ再試行
+REQUEST_TIMEOUT = 60
 REQUEST_INTERVAL_SEC = 1.5  # 相手サーバーへの配慮（連続アクセスの間隔）
-RETRY_BACKOFF_SEC = 2.0
-
-# 情報源ごとのタイムアウト。特に止まりやすかったサイトは短めに設定。
-SITE_TIMEOUTS = {
-    "sapporo.magazine.events": 12,
-    "www.sapporo-chikamichi.jp": 12,
-    "www.cube-garden.com": 10,
-    "www.walkerplus.com": 15,
-    "www.eventernote.com": 12,
-    "www.mitsukoshi.mistore.jp": 15,
-    "www.maruiimai.mistore.jp": 15,
-    "press.moviewalker.jp": 12,
-    "www.unitedcinemas.jp": 12,
-    "www.tohotheater.jp": 12,
-}
-
-# 再試行するHTTPステータス。404等の恒久エラーは無駄に再試行しない。
-RETRY_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 # 収集後にどのカテゴリに分類するか（かなり絞り込んだ基準）
 # CATEGORY_INCLUDE: これらの語句を含んでいれば、そのカテゴリの候補にする
@@ -197,8 +171,8 @@ GEMINI_MODEL = "gemini-flash-latest"  # 常に最新の安定版Flashモデル�
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 AI_ENABLED = bool(GEMINI_API_KEY)
 AI_REQUEST_INTERVAL_SEC = 4.5  # 無料枠のレート制限(1分あたりのリクエスト数)に配慮した間隔
-AI_TIMEOUT = 20
-AI_MAX_RETRIES = 1  # Ver.6: AIも長時間停止させない（初回＋1回）
+AI_TIMEOUT = 60
+AI_MAX_RETRIES = 2  # タイムアウト/一時的なエラー時の再試行回数
 
 AI_SYSTEM_PROMPT = """あなたは札幌市中央区の地域情報まとめサイト向けに、イベント情報を判定するアシスタントです。
 以下のイベント情報を読み、次のカテゴリのうち当てはまるものだけを選んでください（複数可、0個も可）。
@@ -295,82 +269,33 @@ class EventItem:
     tags: list = field(default_factory=list)
     categories: list = field(default_factory=list)  # 判定後にセットされる
     blurb: str = ""  # AI判定が有効な場合、紹介文がここに入る（副業での発信素材として利用可）
+    links: list = field(default_factory=list)  # 複数リンクがある場合(例:同じ映画が複数の映画館で上映)
+                                                 # [{"label": "劇場名", "url": "..."}, ...] の形式。
+                                                 # 空リストなら urlひとつだけをリンクとして扱う。
 
 
 # ----------------------------------------------------------------------------
 # 共通ユーティリティ
 # ----------------------------------------------------------------------------
 
-def _site_config(url: str) -> tuple[int, int]:
-    """URLからサイト別のタイムアウト秒数と再試行回数を決める。"""
-    try:
-        from urllib.parse import urlparse
-        host = urlparse(url).netloc.lower()
-    except Exception:
-        host = ""
-    timeout = SITE_TIMEOUTS.get(host, REQUEST_TIMEOUT)
-    return timeout, REQUEST_RETRIES
-
-
-def fetch(url: str) -> Optional[BeautifulSoup]:
-    """
-    URLを取得してBeautifulSoupオブジェクトを返す。
-
-    Ver.5の重要ポイント:
-      - サイト別タイムアウトで「1サイト待ち続ける」を防止
-      - タイムアウト/接続エラー/一時的HTTPエラーだけ1回再試行
-      - 最終的に失敗したらNoneを返し、呼び出し側が次の情報源へ進める
-      - 500系エラーでもスクリプト全体を停止させない
-    """
-    timeout, max_retries = _site_config(url)
+def fetch(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
+    """URLを取得してBeautifulSoupオブジェクトを返す。失敗時はNone。
+    サーバー側の一時的なエラー(タイムアウトや500番台)に備え、自動で再試行する。"""
     last_error = None
-
-    for attempt in range(max_retries + 1):
+    for attempt in range(1, retries + 2):  # 初回 + 再試行
         try:
-            resp = requests.get(
-                url,
-                headers=REQUEST_HEADERS,
-                timeout=timeout,
-            )
-
-            # 500/502/503/504等は一時的な障害の可能性があるため再試行。
-            if resp.status_code in RETRY_STATUS_CODES and attempt < max_retries:
-                log.warning(
-                    f"一時HTTPエラー: {url} ({resp.status_code}) "
-                    f"→ {RETRY_BACKOFF_SEC:.1f}秒後に再試行"
-                )
-                time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
-                continue
-
+            resp = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
             resp.encoding = resp.apparent_encoding or resp.encoding
             return BeautifulSoup(resp.text, "lxml")
-
-        except (requests.Timeout, requests.ConnectionError) as e:
-            last_error = e
-            if attempt < max_retries:
-                log.warning(
-                    f"取得タイムアウト/接続失敗: {url} "
-                    f"({timeout}秒) → {RETRY_BACKOFF_SEC:.1f}秒後に再試行"
-                )
-                time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
-                continue
-            break
-
-        except requests.HTTPError as e:
-            last_error = e
-            # ここまで来たHTTPエラーは、再試行しても改善しにくいものとして即スキップ。
-            break
-
         except Exception as e:
             last_error = e
-            break
-
-    log.warning(
-        f"取得失敗・スキップ: {url} "
-        f"(timeout={timeout}s, retries={max_retries}, error={last_error})"
-    )
-    time.sleep(REQUEST_INTERVAL_SEC)
+            if attempt <= retries:
+                time.sleep(3)
+            continue
+        finally:
+            time.sleep(REQUEST_INTERVAL_SEC)
+    log.warning(f"取得失敗(再試行含め断念): {url} ({last_error})")
     return None
 
 
@@ -809,7 +734,7 @@ ANIME_MOVIE_HINTS = [
     "名探偵コナン", "鬼滅の刃", "呪術廻戦", "ワンピース", "ガンダム", "五等分の花嫁",
     "推しの子", "スパイファミリー", "スパイ×ファミリー", "ヒーローアカデミア", "チェンソーマン",
     "薬屋のひとりごと", "プリキュア", "ウルトラマン", "幻想水滸伝", "パウ・パトロール",
-    "ミニオンズ", "まどか", "マギカ", "超かぐや姫", "かぐや姫",
+    "ミニオンズ", "まどか", "マギカ",
 ]
 
 def _extract_title_from_schedule_page(url: str) -> Optional[str]:
@@ -832,12 +757,14 @@ def collect_movie_theaters() -> Iterable[EventItem]:
     """札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/シアターキノ/
     TOHOシネマズすすきの。いずれも中央区）で現在上映中の映画を全件取得する（🎬映画）。
     タイトルにANIME_MOVIE_HINTSの語句が含まれるものは、あわせて🎮アニメにも表示されるよう
-    タグを追加する。同じ映画が複数の映画館で上映されていても1件にまとめる。
+    タグを追加する。同じ映画が複数の映画館で上映されている場合は1件にまとめつつ、
+    それぞれの映画館の上映スケジュールページへのリンクを個別に持たせる。
 
     まとめページ(theater/108等)は注目記事中心で全作品が載らないため、
     映画館ごとの個別スケジュールページを1館ずつ巡回して対象の映画IDを集め、
     そのあと各映画の個別ページを開いて正確なタイトルを取得する2段階方式にしている。"""
-    seen_movie_ids: dict[str, str] = {}  # movie_id -> href（最初に見つかったもの）
+    # movie_id -> [(theater_id, schedule_url), ...]（上映している映画館すべてを記録）
+    movie_theater_map: dict[str, list] = {}
     for theater_id, theater_name in SAPPORO_MOVIE_THEATERS.items():
         url = f"https://press.moviewalker.jp/{theater_id}/schedule/"
         soup = fetch(url)
@@ -849,14 +776,17 @@ def collect_movie_theaters() -> Iterable[EventItem]:
             if not m:
                 continue
             movie_id = m.group(1)
-            if movie_id not in seen_movie_ids:
-                seen_movie_ids[movie_id] = href if href.startswith("http") else f"https://press.moviewalker.jp{href}"
+            full_url = href if href.startswith("http") else f"https://press.moviewalker.jp{href}"
+            entries = movie_theater_map.setdefault(movie_id, [])
+            if not any(tid == theater_id for tid, _ in entries):
+                entries.append((theater_id, full_url))
 
     count = 0
     anime_count = 0
     all_titles = []
-    for movie_id, schedule_url in seen_movie_ids.items():
-        title = _extract_title_from_schedule_page(schedule_url)
+    for movie_id, theater_entries in movie_theater_map.items():
+        first_theater_id, first_url = theater_entries[0]
+        title = _extract_title_from_schedule_page(first_url)
         if not title:
             continue
 
@@ -865,176 +795,44 @@ def collect_movie_theaters() -> Iterable[EventItem]:
             tags.append("劇場版")
             anime_count += 1
 
+        links = [
+            {"label": SAPPORO_MOVIE_THEATERS[tid], "url": url}
+            for tid, url in theater_entries
+        ]
+        theater_names = "・".join(SAPPORO_MOVIE_THEATERS[tid] for tid, _ in theater_entries)
+
         count += 1
         all_titles.append(title)
         yield EventItem(
             source="映画館(上映中)",
             title=title[:80],
             url=f"https://press.moviewalker.jp/mv{movie_id}/",
-            place="札幌市内の映画館（中央区）で上映中",
+            place=f"{theater_names}（中央区）で上映中",
             tags=tags,
+            links=links,
         )
     log.info(f"映画館(上映中): {count}件（うちアニメ映画と判定: {anime_count}件）")
     log.info(f"映画館(上映中) 取得タイトル一覧: {all_titles}")
 
 
-def _parse_release_date(text: str) -> Optional[date]:
-    """日本語/スラッシュ表記の公開日からdateを作る。"""
-    text = normalize(clean(text))
-    patterns = [
-        r"(\d{4})年(\d{1,2})月(\d{1,2})日",
-        r"(\d{4})[/-](\d{1,2})[/-](\d{1,2})",
-    ]
-    for pattern in patterns:
-        m = re.search(pattern, text)
-        if not m:
-            continue
-        try:
-            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        except ValueError:
-            return None
-    return None
-
-
-def _in_upcoming_window(release_date: Optional[date], today: date) -> bool:
-    return bool(release_date and today <= release_date <= today + timedelta(days=60))
-
-
-def _make_upcoming_movie(title: str, release_date: date, url: str, source: str, place: str) -> EventItem:
-    tags = ["公開予定映画"]
-    if any(hint in title for hint in ANIME_MOVIE_HINTS):
-        tags.append("劇場版")
-    return EventItem(
-        source=source,
-        title=title[:80],
-        url=url,
-        date_text=f"{release_date.year}年{release_date.month}月{release_date.day}日公開",
-        place=place,
-        tags=tags,
-    )
-
-
-def _collect_unitedcinemas_upcoming(today: date) -> Iterable[EventItem]:
-    """ローソン・ユナイテッドシネマ札幌の公式「公開予定作品」から取得。"""
-    url = "https://www.unitedcinemas.jp/sapporo/movie.php"
-    soup = fetch(url)
-    if soup is None:
-        return
-
-    # 公式ページは「公開日 → 作品名」の順で掲載されるため、日付行の直後から
-    # 作品名らしい文字列を探す。作品情報/予告編などのナビ文言は除外する。
-    lines = [clean(x) for x in soup.stripped_strings if clean(x)]
-    date_re = re.compile(r"^\d{4}/\d{1,2}/\d{1,2}(?:（.*?）)?(?:公開|上映)?$")
-    skip = {"作品情報", "予告編", "作品情報・上映スケジュール", "公開予定作品", "上映作品のご案内"}
-    count = 0
-
-    for i, line in enumerate(lines):
-        if not date_re.fullmatch(line):
-            continue
-        release_date = _parse_release_date(line)
-        if not _in_upcoming_window(release_date, today):
-            continue
-
-        title = ""
-        for candidate in lines[i + 1:i + 8]:
-            if candidate in skip or date_re.fullmatch(candidate):
-                continue
-            if len(candidate) < 2 or len(candidate) > 120:
-                continue
-            # 作品名に続く出演者・監督情報などを拾わないよう、明らかな説明文を除外。
-            if candidate.startswith(("©", "監督", "出演", "声の出演", "Image", "字幕", "吹替")):
-                continue
-            title = candidate
-            break
-        if not title:
-            continue
-
-        count += 1
-        yield _make_upcoming_movie(
-            title=title,
-            release_date=release_date,
-            url=url,
-            source="ローソン・ユナイテッドシネマ札幌(公式・公開予定)",
-            place="ローソン・ユナイテッドシネマ札幌（札幌市中央区）",
-        )
-
-    log.info(f"ユナイテッドシネマ公式(公開予定): {count}件")
-
-
-def _collect_toho_susukino_upcoming(today: date) -> Iterable[EventItem]:
-    """TOHOシネマズすすきの公式の前売券情報から、公開予定作品を補完取得。"""
-    url = "https://www.tohotheater.jp/theater/089/info/advanceticket.html"
-    soup = fetch(url)
-    if soup is None:
-        return
-
-    # TOHO公式ページは作品名 → 「公開日」 → 日付 の構造。
-    # 見出し(h2/h3)を中心に探索し、ページ全体の文字列でも保険をかける。
-    count = 0
-    seen = set()
-    headings = soup.find_all(["h2", "h3", "h4"])
-    for heading in headings:
-        title = clean(heading.get_text(" ", strip=True))
-        if not title or len(title) > 120:
-            continue
-        if title in {"TOHOシネマズすすきの前売券情報", "前売券情報"}:
-            continue
-
-        parent_text = clean(heading.parent.get_text(" ", strip=True)) if heading.parent else ""
-        release_date = _parse_release_date(parent_text)
-        if not _in_upcoming_window(release_date, today):
-            continue
-        if title in seen:
-            continue
-
-        seen.add(title)
-        count += 1
-        yield _make_upcoming_movie(
-            title=title,
-            release_date=release_date,
-            url=url,
-            source="TOHOシネマズすすきの(公式・公開予定)",
-            place="TOHOシネマズすすきの（札幌市中央区）",
-        )
-
-    # 見出し構造が変わった場合のフォールバック。
-    if count == 0:
-        strings = [clean(x) for x in soup.stripped_strings if clean(x)]
-        for i, s in enumerate(strings):
-            if s != "公開日" or i + 1 >= len(strings):
-                continue
-            release_date = _parse_release_date(strings[i + 1])
-            if not _in_upcoming_window(release_date, today):
-                continue
-            title = ""
-            for candidate in reversed(strings[max(0, i - 5):i]):
-                if 2 <= len(candidate) <= 120 and candidate not in {"公開日", "価格", "発売日", "特典"}:
-                    title = candidate
-                    break
-            if title and title not in seen:
-                seen.add(title)
-                count += 1
-                yield _make_upcoming_movie(
-                    title=title,
-                    release_date=release_date,
-                    url=url,
-                    source="TOHOシネマズすすきの(公式・公開予定)",
-                    place="TOHOシネマズすすきの（札幌市中央区）",
-                )
-
-    log.info(f"TOHOシネマズすすきの公式(公開予定): {count}件")
-
-
-def _collect_moviewalker_upcoming(today: date) -> Iterable[EventItem]:
-    """MOVIE WALKER PRESSの公開予定情報。公式情報の取りこぼしを補うバックアップ。"""
+def collect_upcoming_movies() -> Iterable[EventItem]:
+    """今後2ヶ月以内に公開予定の映画（🍿 公開予定映画）。映画館ページ内にある
+    「公開予定」リストから、タイトルと公開日を抽出する。アニメらしきタイトルは
+    あわせて🎮アニメにも表示されるようタグを追加する。同じ映画が複数の映画館で
+    公開予定になっている場合は1件にまとめ、劇場ごとのリンクを個別に持たせる。"""
     date_re = re.compile(r"\d{4}年\d{1,2}月\d{1,2}日公開")
+    today = datetime.now().date()
 
-    for theater_id in SAPPORO_MOVIE_THEATERS:
+    # title -> {"date_text": 公開日の文字列, "theaters": [(theater_name, url), ...]}
+    upcoming: dict[str, dict] = {}
+
+    for theater_id, theater_name in SAPPORO_MOVIE_THEATERS.items():
         url = f"https://press.moviewalker.jp/{theater_id}/schedule/"
         soup = fetch(url)
         if soup is None:
             continue
 
+        # タイトル文字列 -> 映画詳細ページURL の対応を、分かる範囲で作っておく
         href_by_text = {}
         for a in soup.find_all("a", href=re.compile(r"^/mv\d+/?$")):
             t = clean(a.get_text())
@@ -1050,62 +848,42 @@ def _collect_moviewalker_upcoming(today: date) -> Iterable[EventItem]:
             if not title or not (2 <= len(title) <= 60) or date_re.fullmatch(title):
                 continue
 
-            release_date = _parse_release_date(s)
-            if not _in_upcoming_window(release_date, today):
+            m = re.match(r"(\d{4})年(\d{1,2})月(\d{1,2})日公開", s)
+            try:
+                release_date = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            except Exception:
                 continue
+            if release_date < today or release_date > today + timedelta(days=60):
+                continue  # 2ヶ月より先、または既に公開済みのものは対象外
 
-            yield _make_upcoming_movie(
-                title=title,
-                release_date=release_date,
-                url=href_by_text.get(title, url),
-                source="映画館(MOVIE WALKER・公開予定)",
-                place="札幌市内の映画館（中央区）で公開予定",
-            )
+            entry = upcoming.setdefault(title, {"date_text": s, "theaters": []})
+            theater_url = href_by_text.get(title, url)
+            if not any(tn == theater_name for tn, _ in entry["theaters"]):
+                entry["theaters"].append((theater_name, theater_url))
 
-
-def collect_upcoming_movies() -> Iterable[EventItem]:
-    """今後2ヶ月以内の公開予定映画を、映画館公式＋MOVIE WALKERの多重取得で集める。
-
-    優先順位:
-      1. ローソン・ユナイテッドシネマ札幌 公式「公開予定作品」
-      2. TOHOシネマズすすきの 公式「前売券情報」
-      3. MOVIE WALKER PRESS（バックアップ）
-
-    同一タイトルはタイトル正規化で重複除去するため、公式とMOVIE WALKERの両方に
-    掲載されていても1件にまとめる。1サイトが落ちても他の情報源は継続する。
-    """
-    today = datetime.now().date()
-    # 「作品タイトル本体＋公開日」で同一作品をまとめる。
-    # 劇場ごとの「復活上映」「特別フォーマット版」などの表記差も吸収する。
-    seen_titles = set()
     count = 0
     anime_count = 0
+    for title, info in upcoming.items():
+        tags = ["公開予定映画"]
+        if any(hint in title for hint in ANIME_MOVIE_HINTS):
+            tags.append("劇場版")
+            anime_count += 1
 
-    collectors = [
-        _collect_unitedcinemas_upcoming,
-        _collect_toho_susukino_upcoming,
-        _collect_moviewalker_upcoming,
-    ]
+        links = [{"label": tn, "url": u} for tn, u in info["theaters"]]
+        theater_names = "・".join(tn for tn, _ in info["theaters"])
+        primary_url = info["theaters"][0][1] if info["theaters"] else "https://press.moviewalker.jp/"
 
-    for collector in collectors:
-        try:
-            for item in collector(today):
-                key = f"{_normalize_movie_title(item.title)}|{_movie_release_key(item.date_text)}"
-                if key in seen_titles:
-                    # 同一作品が別劇場から来た場合でも、ここでは別EventItemを捨てず、
-                    # DB側のevent_key統合処理で会場情報を集約するためyieldする。
-                    pass
-                else:
-                    seen_titles.add(key)
-                    count += 1
-                if "劇場版" in item.tags:
-                    anime_count += 1
-                yield item
-        except Exception as e:
-            log.error(f"公開予定映画の取得中にエラー: {collector.__name__}: {e} → 次の情報源へ続行")
-            continue
-
-    log.info(f"映画館(公開予定・公式優先): {count}件（うちアニメ映画と判定: {anime_count}件）")
+        count += 1
+        yield EventItem(
+            source="映画館(公開予定)",
+            title=title[:80],
+            url=primary_url,
+            date_text=info["date_text"],
+            place=f"{theater_names}（中央区）で公開予定",
+            tags=tags,
+            links=links,
+        )
+    log.info(f"映画館(公開予定): {count}件（うちアニメ映画と判定: {anime_count}件）")
 
 
 SOURCES = {
@@ -1127,88 +905,6 @@ SOURCES = {
 # データベース
 # ----------------------------------------------------------------------------
 
-def consolidate_movie_duplicates(conn: sqlite3.Connection) -> int:
-    """既存DBに残っている「同じ映画の表記違い」重複を1件へ統合する。
-
-    Ver.6.2ではタイトルが完全一致する場合のみ統合されていたため、
-    「超かぐや姫！復活上映」と「超かぐや姫！特別フォーマット版」のような
-    表記差が別レコードになり得る。起動時に既存データも自動修正する。
-    """
-    rows = conn.execute(
-        "SELECT id,event_key,url,source,title,date_text,place,fee,categories,first_seen,last_seen,blurb "
-        "FROM events WHERE event_key LIKE 'movie|%' ORDER BY id"
-    ).fetchall()
-    groups = {}
-    for row in rows:
-        key = f"{_normalize_movie_title(row[4])}|{_movie_release_key(row[5])}"
-        groups.setdefault(key, []).append(row)
-
-    merged = 0
-    for group_key, items in groups.items():
-        if len(items) <= 1:
-            continue
-        # 代表レコードは公式優先、同順位なら最初のレコード。
-        items = sorted(items, key=lambda r: (_movie_source_priority(r[3]), r[0]))
-        keep = items[0]
-        keep_id = keep[0]
-        canonical_title = _canonical_movie_title(keep[4])
-
-        places = []
-        sources = []
-        cats = []
-        first_seen = keep[9]
-        last_seen = keep[10]
-        blurb = keep[11] or ""
-        best_url = keep[2]
-        best_source = keep[3]
-        best_priority = _movie_source_priority(best_source)
-
-        for row in items:
-            if row[6] and clean(row[6]) not in places:
-                places.append(clean(row[6]))
-            if row[3] and row[3] not in sources:
-                sources.append(row[3])
-            for c in (row[8] or "").split(","):
-                c = clean(c)
-                if c and c not in cats:
-                    cats.append(c)
-            if row[9] and (not first_seen or row[9] < first_seen):
-                first_seen = row[9]
-            if row[10] and row[10] > last_seen:
-                last_seen = row[10]
-            if not blurb and row[11]:
-                blurb = row[11]
-            priority = _movie_source_priority(row[3])
-            if priority < best_priority:
-                best_priority = priority
-                best_url = row[2]
-                best_source = row[3]
-
-        merged_place = " / ".join(places)
-        # sourceは代表の公式ソースを残しつつ、複数ソースがあることも分かるようにする。
-        merged_source = best_source
-        for src in sources:
-            if src != merged_source and src not in merged_source:
-                merged_source += " / " + src
-
-        conn.execute(
-            "UPDATE events SET event_key=?,url=?,source=?,title=?,date_text=?,place=?,categories=?,first_seen=?,last_seen=?,blurb=? WHERE id=?",
-            (
-                f"movie|{_normalize_movie_title(canonical_title)}|{_movie_release_key(keep[5])}",
-                best_url, merged_source, canonical_title, keep[5], merged_place, ",".join(cats),
-                first_seen, last_seen, blurb, keep_id,
-            ),
-        )
-        for row in items[1:]:
-            conn.execute("DELETE FROM events WHERE id=?", (row[0],))
-            merged += 1
-
-    if merged:
-        conn.commit()
-        log.info(f"公開予定映画の既存重複を統合: {merged}件削除")
-    return merged
-
-
 def cleanup_stale_manual_urls(conn: sqlite3.Connection) -> None:
     """手動登録イベントはURLを変更することがあるため、現在のmanual_eventsに
     含まれないURLパターン（手動登録ソースなのに一致しないもの）は
@@ -1225,274 +921,77 @@ def cleanup_stale_manual_urls(conn: sqlite3.Connection) -> None:
         log.info(f"手動登録イベントの古いURL {len(stale)}件を削除しました")
 
 
-def _canonical_movie_title(title: str) -> str:
-    """映画タイトルを表示用の基本タイトルへ正規化する。
-
-    劇場ごとに「復活上映」「特別フォーマット版」などの販売/上映形態が付く
-    場合があるため、それらをタイトル本体から切り離して同一作品として扱う。
-    """
-    t = clean(title or "")
-    # 全角/半角・前後空白・先頭の装飾括弧を吸収
-    t = normalize(t).strip()
-    t = re.sub(r"[【】\[\]]", "", t).strip()
-
-    # 先頭/末尾に付く劇場・販売上の補足表現を除去
-    # 例: 「超かぐや姫！ 復活上映」「超かぐや姫！ 特別フォーマット版」
-    patterns = [
-        r"\s*(?:復活上映|再上映|リバイバル上映|アンコール上映)\s*$",
-        r"\s*(?:特別フォーマット版|特別上映版|特別版)\s*$",
-        r"\s*(?:通常版|通常上映)\s*$",
-    ]
-    for pattern in patterns:
-        t = re.sub(pattern, "", t, flags=re.IGNORECASE).strip()
-
-    # 末尾の括弧内が上映形態だけなら除去
-    t = re.sub(r"[（(](?:復活上映|再上映|特別フォーマット版|特別上映版|特別版|通常版|通常上映)[）)]\s*$", "", t).strip()
-    return t or clean(title or "")
-
-
-def _normalize_movie_title(title: str) -> str:
-    """映画の重複判定用タイトル。上映形態の違いは同一作品として扱う。"""
-    t = _canonical_movie_title(title).lower()
-    t = re.sub(r"\s+", "", t)
-    return t
-
-
-def _movie_release_key(date_text: str) -> str:
-    """公開日を重複判定用のISO日付へ変換する。"""
-    dt = _parse_release_date(date_text or "")
-    return dt.isoformat() if dt else normalize(clean(date_text or ""))
-
-
-def _is_upcoming_movie_item(item: EventItem) -> bool:
-    """公開予定映画として扱うべきイベントか判定する。"""
-    return (
-        "公開予定映画" in (item.tags or [])
-        or "公開予定" in (item.source or "")
-        or "🍿 公開予定映画" in (item.categories or [])
-    )
-
-
-def _event_key(item: EventItem) -> str:
-    """DB上の論理キー。
-
-    通常イベントはURLをキーにするが、公開予定映画だけは
-    「映画タイトル＋公開日」をキーにする。これにより、同じ劇場の公式ページURLを
-    複数作品が共有していても、作品ごとに別レコードとして保存できる。
-    """
-    if _is_upcoming_movie_item(item):
-        return f"movie|{_normalize_movie_title(item.title)}|{_movie_release_key(item.date_text)}"
-    return f"url|{normalize(clean(item.url or ''))}"
-
-
-def _is_movie_source(source: str) -> bool:
-    return "公開予定" in (source or "")
-
-
-def _movie_source_priority(source: str) -> int:
-    """公開予定映画の情報源優先度。数字が小さいほど優先。"""
-    source = source or ""
-    if "ユナイテッドシネマ公式" in source:
-        return 10
-    if "TOHOシネマズすすきの公式" in source:
-        return 20
-    if "MOVIE WALKER" in source:
-        return 30
-    return 50
-
-
-def _merge_movie_place(old_place: str, new_place: str) -> str:
-    """同一作品が複数劇場から取得された場合、劇場情報を重複なく統合する。"""
-    vals = []
-    for text in (old_place or "", new_place or ""):
-        text = clean(text)
-        if text and text not in vals:
-            vals.append(text)
-    return " / ".join(vals)
-
-
 def init_db(conn: sqlite3.Connection) -> None:
-    """DB初期化/マイグレーション。
-
-    Ver.6.2ではURLを物理的な主キーにせず、idを主キー、event_keyを論理一意キーにする。
-    映画だけevent_keyを「タイトル＋公開日」にすることで、劇場公式ページの共通URLによる
-    大量の作品消失を防ぐ。
-    """
-    cols = {row[1] for row in conn.execute("PRAGMA table_info(events)")}
-
-    if not cols:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_key TEXT NOT NULL UNIQUE,
-                url TEXT NOT NULL,
-                source TEXT,
-                title TEXT,
-                date_text TEXT,
-                place TEXT,
-                fee TEXT,
-                categories TEXT,
-                first_seen TEXT,
-                last_seen TEXT,
-                blurb TEXT DEFAULT ''
-            )
-            """
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS events (
+            url TEXT PRIMARY KEY,
+            source TEXT,
+            title TEXT,
+            date_text TEXT,
+            place TEXT,
+            fee TEXT,
+            categories TEXT,
+            first_seen TEXT,
+            last_seen TEXT
         )
-        conn.commit()
-        return
-
-    # Ver.6以前は url TEXT PRIMARY KEY だったため、event_key方式へ一度だけ移行。
-    if "id" not in cols or "event_key" not in cols:
-        log.info("DBをVer.6.2形式へ移行します（URL主キー → id主キー＋event_key）")
-        old_name = "events_old_v61"
-        conn.execute(f"DROP TABLE IF EXISTS {old_name}")
-        conn.execute(f"ALTER TABLE events RENAME TO {old_name}")
-        conn.execute(
-            """
-            CREATE TABLE events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_key TEXT NOT NULL UNIQUE,
-                url TEXT NOT NULL,
-                source TEXT,
-                title TEXT,
-                date_text TEXT,
-                place TEXT,
-                fee TEXT,
-                categories TEXT,
-                first_seen TEXT,
-                last_seen TEXT,
-                blurb TEXT DEFAULT ''
-            )
-            """
-        )
-
-        old_cols = {row[1] for row in conn.execute(f"PRAGMA table_info({old_name})")}
-        select_cols = [c for c in ["url", "source", "title", "date_text", "place", "fee", "categories", "first_seen", "last_seen", "blurb"] if c in old_cols]
-        rows = conn.execute(f"SELECT {', '.join(select_cols)} FROM {old_name}").fetchall()
-        migrated = 0
-        skipped = 0
-        seen_keys = set()
-        for row in rows:
-            d = dict(zip(select_cols, row))
-            item = EventItem(
-                source=d.get("source") or "",
-                title=d.get("title") or "",
-                url=d.get("url") or "",
-                date_text=d.get("date_text") or "",
-                place=d.get("place") or "",
-                fee=d.get("fee") or "",
-                categories=[x for x in (d.get("categories") or "").split(",") if x],
-                blurb=d.get("blurb") or "",
-            )
-            key = _event_key(item)
-            if key in seen_keys:
-                # 旧DBで同じ映画URLにまとめられていたレコードが複数ある場合の安全策。
-                # 次回の公式取得で正しい作品データが復元されるため、重複は1件だけ残す。
-                skipped += 1
-                continue
-            seen_keys.add(key)
-            conn.execute(
-                """
-                INSERT INTO events
-                    (event_key, url, source, title, date_text, place, fee, categories, first_seen, last_seen, blurb)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    key, item.url, item.source, item.title, item.date_text, item.place,
-                    item.fee, ",".join(item.categories), d.get("first_seen") or "", d.get("last_seen") or "", item.blurb,
-                ),
-            )
-            migrated += 1
-
-        conn.execute(f"DROP TABLE {old_name}")
-        conn.commit()
-        log.info(f"DB移行完了: {migrated}件を移行 / 重複スキップ: {skipped}件")
-        return
-
-    # event_key方式になっているDBに、旧バージョン由来の列が不足していれば補う。
+        """
+    )
+    # 旧バージョン(列が無い)で作られたDBを引き続き使えるよう自動マイグレーション
     existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(events)")}
     if "categories" not in existing_cols:
         conn.execute("ALTER TABLE events ADD COLUMN categories TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（categories列を追加）")
     if "blurb" not in existing_cols:
         conn.execute("ALTER TABLE events ADD COLUMN blurb TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（blurb列を追加）")
+    if "links" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN links TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（links列を追加）")
     conn.commit()
 
 
 def upsert_event(conn: sqlite3.Connection, item: EventItem, today: str) -> bool:
-    """event_keyで新規/更新を判定する。
-
-    通常イベント: URLベース
-    公開予定映画: タイトル＋公開日ベース
-
-    同一映画を複数の公式劇場/情報源から取得した場合は1件に統合し、
-    劇場情報をplaceへ追記する。公式情報をMOVIE WALKERより優先して残す。
-    """
-    key = _event_key(item)
-    cur = conn.execute(
-        "SELECT id, url, source, title, date_text, place, fee, categories, blurb FROM events WHERE event_key = ?",
-        (key,),
-    )
+    """新規なら True（新着）、既存なら内容(タイトル等)とlast_seenを更新して False を返す。
+    タイトルや日付/場所も毎回上書きするのは、情報源側の表記が後から変わったり、
+    以前のバグ等で誤った内容が保存されてしまった場合でも、再取得時に自動的に
+    最新の正しい内容へ直るようにするため。"""
+    cur = conn.execute("SELECT url FROM events WHERE url = ?", (item.url,))
     row = cur.fetchone()
     cats = ",".join(item.categories)
-    display_title = _canonical_movie_title(item.title) if _is_upcoming_movie_item(item) else item.title
-
+    links_json = json.dumps(item.links, ensure_ascii=False) if item.links else ""
     if row is None:
         conn.execute(
             """
-            INSERT INTO events
-                (event_key, url, source, title, date_text, place, fee, categories, blurb, first_seen, last_seen)
+            INSERT INTO events (url, source, title, date_text, place, fee, categories, blurb, links, first_seen, last_seen)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (key, item.url, item.source, display_title, item.date_text, item.place, item.fee, cats, item.blurb, today, today),
+            (item.url, item.source, item.title, item.date_text, item.place, item.fee, cats, item.blurb,
+             links_json, today, today),
         )
         return True
-
-    event_id, old_url, old_source, old_title, old_date_text, old_place, old_fee, old_categories, old_blurb = row
-
-    new_url = item.url
-    new_source = item.source
-    new_place = item.place
-
-    if _is_upcoming_movie_item(item) or _is_movie_source(old_source):
-        # 同じ映画が複数劇場/情報源に存在する場合は統合。
-        new_place = _merge_movie_place(old_place, item.place)
-        # 公式URLを優先。既存が公式ならMOVIE WALKERで上書きしない。
-        if _movie_source_priority(item.source) > _movie_source_priority(old_source):
-            new_url = old_url
-            new_source = old_source
-        elif _movie_source_priority(item.source) < _movie_source_priority(old_source):
-            new_url = item.url
-            new_source = item.source
-        else:
-            new_url = old_url or item.url
-            new_source = old_source or item.source
-
-    if item.blurb:
-        conn.execute(
-            """
-            UPDATE events
-               SET last_seen = ?, url = ?, source = ?, title = ?, date_text = ?, place = ?, fee = ?, categories = ?, blurb = ?
-             WHERE id = ?
-            """,
-            (today, new_url, new_source, display_title, item.date_text, new_place, item.fee, cats, item.blurb, event_id),
-        )
     else:
+        # 紹介文(blurb)は新しく判定できた時だけ上書きする（AI無効時に空で消してしまわないため）
+        blurb_clause = ", blurb = ?" if item.blurb else ""
+        params = [today, item.title, item.date_text, item.place, item.fee, cats, links_json]
+        if item.blurb:
+            params.append(item.blurb)
+        params.append(item.url)
         conn.execute(
-            """
-            UPDATE events
-               SET last_seen = ?, url = ?, source = ?, title = ?, date_text = ?, place = ?, fee = ?, categories = ?
-             WHERE id = ?
+            f"""
+            UPDATE events SET last_seen = ?, title = ?, date_text = ?, place = ?, fee = ?,
+                               categories = ?, links = ?{blurb_clause}
+            WHERE url = ?
             """,
-            (today, new_url, new_source, item.title, item.date_text, new_place, item.fee, cats, event_id),
+            params,
         )
-    return False
+        return False
 
 
 def fetch_all_current(conn: sqlite3.Connection) -> list:
     """DB内の全件を、表示用にカテゴリ別へ振り分けて返す"""
     cur = conn.execute(
-        "SELECT source, title, date_text, place, fee, categories, url, first_seen, blurb "
+        "SELECT source, title, date_text, place, fee, categories, url, first_seen, blurb, links "
         "FROM events ORDER BY first_seen DESC, date_text ASC"
     )
     rows = cur.fetchall()
@@ -1580,14 +1079,14 @@ def reclassify_all(conn: sqlite3.Connection) -> None:
     """保存済みの全イベントを、現在のCATEGORY_INCLUDE/EXCLUDE基準で再判定し直す。
     基準（キーワード）を変更するたびに、過去に保存済みのデータにも新基準が
     反映されるようにするための処理。"""
-    cur = conn.execute("SELECT id, url, source, title, place FROM events")
+    cur = conn.execute("SELECT url, source, title, place FROM events")
     rows = cur.fetchall()
     updated = 0
-    for event_id, url, source, title, place in rows:
+    for url, source, title, place in rows:
         tmp = EventItem(source=source or "", title=title or "", url=url, place=place or "",
                          tags=infer_tags_from_source(source))
         cats = classify(tmp)
-        conn.execute("UPDATE events SET categories = ? WHERE id = ?", (",".join(cats), event_id))
+        conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
         updated += 1
     conn.commit()
     log.info(f"既存データ {updated} 件を最新の分類基準で再判定しました")
@@ -1609,11 +1108,11 @@ def escape_html(text: str) -> str:
 def build_html(rows, today: str, new_count: int) -> str:
     # カテゴリごとにグループ化
     grouped = {label: [] for label in CATEGORY_ORDER}
-    for source, title, date_text, place, fee, cats, url, first_seen, blurb in rows:
+    for source, title, date_text, place, fee, cats, url, first_seen, blurb, links_json in rows:
         cat_list = cats.split(",") if cats else []
         for c in cat_list:
             if c in grouped:
-                grouped[c].append((source, title, date_text, place, fee, url, first_seen, blurb))
+                grouped[c].append((source, title, date_text, place, fee, url, first_seen, blurb, links_json))
 
     sections_html = ""
     for label in CATEGORY_ORDER:
@@ -1622,11 +1121,24 @@ def build_html(rows, today: str, new_count: int) -> str:
             sections_html += f'<h2>{label}</h2><p class="empty">現在、該当する情報はありません。</p>'
             continue
         sections_html += f'<h2>{label} <span class="count">({len(items)}件)</span></h2><div class="cards">'
-        for source, title, date_text, place, fee, url, first_seen, blurb in items:
+        for source, title, date_text, place, fee, url, first_seen, blurb, links_json in items:
             is_new = " new" if first_seen == today else ""
             badge = '<span class="badge">NEW</span>' if first_seen == today else ""
+
+            try:
+                links = json.loads(links_json) if links_json else []
+            except Exception:
+                links = []
+            if not links:
+                links = [{"label": source, "url": url}]
+            links_html = "".join(
+                f'<a class="card-link" href="{escape_html(l.get("url", url))}" target="_blank" rel="noopener">'
+                f'{escape_html(l.get("label", source))} ↗</a>'
+                for l in links
+            )
+
             sections_html += f"""
-            <a class="card{is_new}" href="{escape_html(url)}" target="_blank" rel="noopener">
+            <div class="card{is_new}">
               {badge}
               <div class="card-title">{escape_html(title)}</div>
               {'<div class="card-blurb">✨ ' + escape_html(blurb) + '</div>' if blurb else ''}
@@ -1636,7 +1148,8 @@ def build_html(rows, today: str, new_count: int) -> str:
                 {'💰 ' + escape_html(fee) + '<br>' if fee else ''}
                 <span class="source">{escape_html(source)}</span>
               </div>
-            </a>
+              <div class="card-links">{links_html}</div>
+            </div>
             """
         sections_html += "</div>"
 
@@ -1710,16 +1223,31 @@ def build_html(rows, today: str, new_count: int) -> str:
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
-    text-decoration: none;
     color: var(--text);
-    transition: border-color 0.15s, transform 0.15s;
-  }}
-  .card:hover {{
-    border-color: var(--accent2);
-    transform: translateY(-2px);
+    transition: border-color 0.15s;
   }}
   .card.new {{
     border-color: var(--accent);
+  }}
+  .card-links {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }}
+  .card-link {{
+    display: inline-block;
+    font-size: 11.5px;
+    color: var(--accent2);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    transition: border-color 0.15s, color 0.15s;
+  }}
+  .card-link:hover {{
+    border-color: var(--accent2);
+    color: #fff;
   }}
   .badge {{
     position: absolute;
@@ -1782,7 +1310,6 @@ def main() -> None:
 
     conn = sqlite3.connect(DB_PATH)
     init_db(conn)
-    consolidate_movie_duplicates(conn)
     cleanup_stale_manual_urls(conn)  # URLを変更した手動登録イベントの古い重複を削除
     reclassify_all(conn)  # 分類基準が更新されている場合に備え、既存データも最新基準で判定し直す
 
@@ -1809,9 +1336,7 @@ def main() -> None:
                 if upsert_event(conn, item, today):
                     new_items.append(item)
         except Exception as e:
-            # Ver.6: 1情報源の異常で全体を止めない。
-            log.error(f"{name} の収集中にエラー: {e} → この情報源をスキップして続行")
-            continue
+            log.error(f"{name} の収集中にエラー: {e}")
 
     conn.commit()
 

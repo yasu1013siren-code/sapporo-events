@@ -68,16 +68,31 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 16px;
-    text-decoration: none;
     color: var(--text);
-    transition: border-color 0.15s, transform 0.15s;
-  }
-  .card:hover {
-    border-color: var(--accent2);
-    transform: translateY(-2px);
+    transition: border-color 0.15s;
   }
   .card.new {
     border-color: var(--accent);
+  }
+  .card-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .card-link {
+    display: inline-block;
+    font-size: 11.5px;
+    color: var(--accent2);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .card-link:hover {
+    border-color: var(--accent2);
+    color: #fff;
   }
   .badge {
     position: absolute;
@@ -123,7 +138,7 @@
 </header>
 <main>
 <h2>🍜 飲食 <span class="count">(4件)</span></h2><div class="cards">
-            <a class="card new" href="https://sapporo.magazine.events/area/toyohira-ku/83209.html" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">六軒村で楽しむ小さな秋のマルシェ</div>
               
@@ -133,9 +148,10 @@
                 💰 0円<br>
                 <span class="source">サツイベ(中央区)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/toyohira-ku/83209.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://sapporo.magazine.events/area/chuou-ku/83130.html" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Meets!神戸フェア in チカホ</div>
               
@@ -145,9 +161,10 @@
                 💰 0円 「旅する楽しさ、ここで見つける。」をテーマに、飛行機で約2時間の距離にある<br>
                 <span class="source">サツイベ(中央区)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/chuou-ku/83130.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.sapporo.travel/autumnfest/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">2026さっぽろオータムフェスト</div>
               
@@ -157,9 +174,10 @@
                 
                 <span class="source">手動登録(年次フェス)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.sapporo.travel/autumnfest/" target="_blank" rel="noopener">手動登録(年次フェス) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.daimaru.co.jp/sapporo/coffeepairingfestival/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）</div>
               
@@ -169,165 +187,127 @@
                 
                 <span class="source">手動登録(年次フェス)</span>
               </div>
-            </a>
-            </div><h2>🎮 アニメ <span class="count">(12件)</span></h2><div class="cards">
-            <a class="card new" href="https://press.moviewalker.jp/mv73373/" target="_blank" rel="noopener">
+              <div class="card-links"><a class="card-link" href="https://www.daimaru.co.jp/sapporo/coffeepairingfestival/" target="_blank" rel="noopener">手動登録(年次フェス) ↗</a></div>
+            </div>
+            </div><h2>🎮 アニメ <span class="count">(8件)</span></h2><div class="cards">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">劇場版 魔法少女まどか☆マギカ 〈ワルプルギスの廻天〉</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92494/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ミニオンズ＆モンスターズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92048/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">映画クレヨンしんちゃん 奇々怪々！オラの妖怪バケ～ション</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91749/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">映画ちいかわ 人魚の島のひみつ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92454/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">パウ・パトロール ザ・ダイノ・ムービー</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92454/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92454/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93539/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">劇場版 TUBE 40th Anniversary Live &amp; Documentary 〜40周年の航海記〜</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93539/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93946/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">アニメ「幻想水滸伝」第1話〜第3話 &lt;2週間先行プレミアム上映&gt;</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93946/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv94144/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">機動戦士ガンダムSEED FREEDOM／少年とガンダム 機動戦士ガンダム50周年 -Road to 50- プロローグムービー TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">劇場版ダーウィンが来た！世界のネコのなかまたち</div>
-              
-              <div class="card-meta">
-                📅 2026年10月2日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">映画名探偵プリキュア！ 不思議な庭と2人の秘密</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『超かぐや姫！』特別フォーマット版</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">「劇場版 少女☆歌劇 レヴュースタァライト」リバイバル上映</div>
-              
-              <div class="card-meta">
-                📅 2026年9月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            </div><h2>🎵 音楽ライブ <span class="count">(17件)</span></h2><div class="cards">
-            <a class="card new" href="https://press.moviewalker.jp/mv94126/" target="_blank" rel="noopener">
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94144/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            </div><h2>🎵 音楽ライブ <span class="count">(15件)</span></h2><div class="cards">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Katy Perry: THE LIFETIMES TOUR - LIVE FROM PARIS TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94126/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/476197" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">西野カナ TOUR 2026 “HEART BEAT” 北海道 Day.1</div>
               
@@ -337,9 +317,10 @@
                 
                 <span class="source">イベンターノート(札幌文化芸術劇場hitaru)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/476197" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/476196" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">西野カナ TOUR 2026 “HEART BEAT” 北海道 Day.2</div>
               
@@ -349,9 +330,10 @@
                 
                 <span class="source">イベンターノート(札幌文化芸術劇場hitaru)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/476196" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/469278" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">水曜どうでしょう祭UNITE2026 前日祭</div>
               
@@ -361,9 +343,10 @@
                 
                 <span class="source">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/469278" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/469276" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">水曜どうでしょう祭UNITE2026 本 祭 9月5日</div>
               
@@ -373,9 +356,10 @@
                 
                 <span class="source">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/469276" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/469277" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">水曜どうでしょう祭UNITE2026 本 祭 9月6日</div>
               
@@ -385,9 +369,10 @@
                 
                 <span class="source">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/469277" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/471030" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">LOVEBITES「OUTSTANDING TOUR - JAPAN 2026」北海道公演</div>
               
@@ -397,9 +382,10 @@
                 
                 <span class="source">イベンターノート(Zepp Sapporo)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/471030" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/490707" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">FICTIONAL JAPAN ROAD 2026 北海道</div>
               
@@ -409,9 +395,10 @@
                 
                 <span class="source">イベンターノート(Zepp Sapporo)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/490707" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/471437" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">【中止】 岡崎体育 10th Anniversary Tour “Zepp10連単総流し” ＜ウエスチャンピオンシップ＞</div>
               
@@ -421,9 +408,10 @@
                 
                 <span class="source">イベンターノート(Zepp Sapporo)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/471437" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/480274" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">THE YELLOW MONKEY TOUR 2026 THE COUNTDOWN 〜60分1本勝負〜 北海道公演</div>
               
@@ -433,9 +421,10 @@
                 
                 <span class="source">イベンターノート(Zepp Sapporo)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/480274" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/489382" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">SBI MUSIC CIRCUS HOKKAIDO -DAYBREAK-</div>
               
@@ -445,9 +434,10 @@
                 
                 <span class="source">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/489382" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/490183" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">SBI MUSIC CIRCUS HOKKAIDO -AFTER DARK-</div>
               
@@ -457,9 +447,10 @@
                 
                 <span class="source">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/490183" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/483670" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">羊文学 TOUR 2026 &quot;すーーーはーーー&quot;北海道</div>
               
@@ -469,9 +460,10 @@
                 
                 <span class="source">イベンターノート(札幌文化芸術劇場hitaru)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/483670" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/456639" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">BUMP OF CHICKEN TOUR 2026 北海道公演 DAY1</div>
               
@@ -481,9 +473,10 @@
                 
                 <span class="source">イベンターノート(北海きたえーる)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/456639" target="_blank" rel="noopener">イベンターノート(北海きたえーる) ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.eventernote.com/events/456641" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">BUMP OF CHICKEN TOUR 2026 北海道公演 DAY2</div>
               
@@ -493,1293 +486,790 @@
                 
                 <span class="source">イベンターノート(北海きたえーる)</span>
               </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『からぴちパラダイス ARENA TOUR 2026 〜シンフォニーエクスプレス〜』 Kアリーナ横浜公演 ライブビューイング</div>
-              
-              <div class="card-meta">
-                📅 2026年10月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">Stray Kids World Tour</div>
-              
-              <div class="card-meta">
-                📅 2026年8月30日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/456641" target="_blank" rel="noopener">イベンターノート(北海きたえーる) ↗</a></div>
+            </div>
             </div><h2>🎬 映画 <span class="count">(58件)</span></h2><div class="cards">
-            <a class="card new" href="https://press.moviewalker.jp/mv73373/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">劇場版 魔法少女まどか☆マギカ 〈ワルプルギスの廻天〉</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv73373/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93024/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ラスト・サバイバー</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93024/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv93024/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv93024/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv88762/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">時には懺悔を</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv88762/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv88762/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv88762/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93192/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">シェルター</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93192/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv93192/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92742/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">私はあなたを知らない、</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92742/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92742/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv32043/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ハリー・ポッターと賢者の石</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv32043/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv32043/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91142/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">レンタル家族</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91142/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93164/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ウォーターガーディアンズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93164/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92861/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">オークストリートの異変</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92861/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92861/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92861/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv90689/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">あの星が降る丘で、君とまた出会いたい。</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv90689/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv90689/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv90689/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92494/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ミニオンズ＆モンスターズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91168/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ブルーロック</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91168/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91168/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91168/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92048/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">映画クレヨンしんちゃん 奇々怪々！オラの妖怪バケ～ション</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91724/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">モアナと伝説の海</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91724/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91724/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91724/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92892/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">開戦前夜</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92892/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92892/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv87980/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">スパイダーマン：ブランド・ニュー・デイ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv87980/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv87980/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv87980/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91749/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">映画ちいかわ 人魚の島のひみつ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv91749/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92454/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">パウ・パトロール ザ・ダイノ・ムービー</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92454/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92454/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv90400/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">キングダム 魂の決戦</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv90400/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv90400/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv90400/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv81466/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">トイ・ストーリー５</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv81466/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv81466/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv81466/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93087/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">『時をかける少女』4K</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93087/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv86806/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Michael／マイケル</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv86806/schedule/th220/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv86806/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv86806/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92641/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">平行と垂直</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92641/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93113/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">見えない娘 THE INVISIBLES</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93113/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93539/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">劇場版 TUBE 40th Anniversary Live &amp; Documentary 〜40周年の航海記〜</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93539/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv94135/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">王様戦隊キングオージャー フィルム・コンサート in シネマ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94135/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv94039/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">八仙！</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94039/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93602/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">クラプトン・フェスティヴァル第3部「エリック・クラプトン：ライヴ・アット・ステイプルズ・センター2001」</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93602/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93464/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">グレイ・ミッション</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93464/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92985/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ドラマなふたり</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92985/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93325/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ムカデ人間 4K</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93325/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92854/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">しらぬひ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92854/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93946/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">アニメ「幻想水滸伝」第1話〜第3話 &lt;2週間先行プレミアム上映&gt;</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93946/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92292/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">機動警察パトレイバー EZY File2</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92292/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93086/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">レディ・オア・ノット２</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93086/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv51101/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">山下達郎 シアター・ライヴ PERFORMANCE 1984-2012</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv51101/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92770/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">だぁれかさんとアソぼ？</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92770/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91896/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">口に関するアンケート</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91896/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92715/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">悲しくて美しい世界／THIS IS SPARKLEHORSE</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92715/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91681/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">猫を放つ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91681/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv89211/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">素敵すぎて素敵すぎて素敵すぎる</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv89211/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv89951/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">POCA PON ポカポン</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv89951/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91592/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">大統領のケーキ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91592/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv29672/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">恐怖分子</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv29672/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93729/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">叛逆のサウンドトラック</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93729/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93298/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">雲と大地のはざまで</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93298/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv84872/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ストップ・メイキング・センス 4Kレストア</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv84872/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv91352/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">藍反射</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv91352/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93541/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ナイトボーン -夜哭-</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93541/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93385/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ヒトラーの毒見役</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93385/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv92931/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">白パンと独裁者</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92931/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93130/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">プライベート・ケース</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93130/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv89723/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">急に具合が悪くなる</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 シアターキノ（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv89723/schedule/th533/" target="_blank" rel="noopener">シアターキノ ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv94126/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Katy Perry: THE LIFETIMES TOUR - LIVE FROM PARIS TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94126/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv40510/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ゴジラ×モスラ×メカゴジラ 東京SOS TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv40510/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv94144/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">機動戦士ガンダムSEED FREEDOM／少年とガンダム 機動戦士ガンダム50周年 -Road to 50- プロローグムービー TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94144/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv93275/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">八月の声を運ぶ男 TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93275/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://press.moviewalker.jp/mv87477/" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">ヒプノシスマイク -Division Rap Battle- TOHOシネマズ</div>
               
               <div class="card-meta">
                 
-                📍 札幌市内の映画館（中央区）で上映中<br>
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-            </a>
-            </div><h2>🍿 公開予定映画 <span class="count">(47件)</span></h2><div class="cards">
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ストリートファイター／ザ・ムービー</div>
-              
-              <div class="card-meta">
-                📅 2026年10月16日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">映画「BanG Dream! Ave Mujica prima aurora」</div>
-              
-              <div class="card-meta">
-                📅 2026年10月16日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">mentor</div>
-              
-              <div class="card-meta">
-                📅 2026年10月16日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.tohotheater.jp/theater/089/info/advanceticket.html" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">青春ブタ野郎はディアフレンドの夢を見ない</div>
-              
-              <div class="card-meta">
-                📅 2026年10月16日公開<br>
-                📍 TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">TOHOシネマズすすきの(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ディスクロージャー・デイ</div>
-              
-              <div class="card-meta">
-                📅 2026年10月1日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">劇場シリーズ【第一部】メイドインアビス 目覚める神秘</div>
-              
-              <div class="card-meta">
-                📅 2026年10月23日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">うるわしの宵の月</div>
-              
-              <div class="card-meta">
-                📅 2026年10月23日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ママがもうこの世界にいなくても 私の命の日記</div>
-              
-              <div class="card-meta">
-                📅 2026年10月2日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">劇場版ダーウィンが来た！世界のネコのなかまたち</div>
-              
-              <div class="card-meta">
-                📅 2026年10月2日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ファーストボイス</div>
-              
-              <div class="card-meta">
-                📅 2026年10月2日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">“推して！祝って！盛り上がろう！” 『ゼンブ・オブ・トーキョー』 日向坂46四期生11名バースデー記念 特別再上映 2年目《 小西夏菜実バースデー記念》</div>
-              
-              <div class="card-meta">
-                📅 2026年10月3日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『からぴちパラダイス ARENA TOUR 2026 〜シンフォニーエクスプレス〜』 Kアリーナ横浜公演 ライブビューイング</div>
-              
-              <div class="card-meta">
-                📅 2026年10月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">【抱っこdeシネマ】踊る大捜査線 N.E.W. メトロポリスを駆け抜けろ！</div>
-              
-              <div class="card-meta">
-                📅 2026年10月7日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『ガールズ＆パンツァー 最終章』第5話</div>
-              
-              <div class="card-meta">
-                📅 2026年10月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">DIGGER／ディガー</div>
-              
-              <div class="card-meta">
-                📅 2026年10月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">汝、星のごとく</div>
-              
-              <div class="card-meta">
-                📅 2026年10月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">どこよりも遠い場所にいる君へ</div>
-              
-              <div class="card-meta">
-                📅 2026年10月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.tohotheater.jp/theater/089/info/advanceticket.html" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ガールズ＆パンツァー 最終章 第5話</div>
-              
-              <div class="card-meta">
-                📅 2026年10月9日公開<br>
-                📍 TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">TOHOシネマズすすきの(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">Stray Kids World Tour</div>
-              
-              <div class="card-meta">
-                📅 2026年8月30日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ルックバック</div>
-              
-              <div class="card-meta">
-                📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『最終楽章 響け！ユーフォニアム』後編</div>
-              
-              <div class="card-meta">
-                📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://press.moviewalker.jp/th220/schedule/" target="_blank" rel="noopener">
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv87477/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            </div><h2>🍿 公開予定映画 <span class="count">(2件)</span></h2><div class="cards">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">オデュッセイア</div>
               
               <div class="card-meta">
                 📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・シアターキノ・TOHOシネマズすすきの（中央区）で公開予定<br>
                 
                 <span class="source">映画館(MOVIE WALKER・公開予定)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/th220/schedule/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/th592/schedule/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/th533/schedule/" target="_blank" rel="noopener">シアターキノ ↗</a><a class="card-link" href="https://press.moviewalker.jp/th828/schedule/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
-              <div class="card-title">5秒で完全犯罪を生成する方法</div>
+              <div class="card-title">オデュッセイア</div>
               
               <div class="card-meta">
                 📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">映画「宇宙なんちゃら こてつくん」うっかり出てきた宇宙人を探せ！</div>
-              
-              <div class="card-meta">
-                📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ASKA CONCERT 2026 昭和が見ていたクリスマス!?</div>
-              
-              <div class="card-meta">
-                📅 2026年9月11日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.tohotheater.jp/theater/089/info/advanceticket.html" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">最終楽章 響け！ユーフォニアム 後編</div>
-              
-              <div class="card-meta">
-                📅 2026年9月11日公開<br>
-                📍 TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">TOHOシネマズすすきの(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">【抱っこdeシネマ】白鳥とコウモリ</div>
-              
-              <div class="card-meta">
-                📅 2026年9月16日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">映画名探偵プリキュア！ 不思議な庭と2人の秘密</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">踊る大捜査線 N.E.W. メトロポリスを駆け抜けろ！</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">『超かぐや姫！』特別フォーマット版</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">さとこはいつも</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">八つ墓村</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">「メイドインアビス 烈日の黄金郷」【前編】1話〜6話</div>
-              
-              <div class="card-meta">
-                📅 2026年9月18日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">【抱っこdeシネマ】ルックバック</div>
-              
-              <div class="card-meta">
-                📅 2026年9月23日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">アベンジャーズ／エンドゲーム：アンコール</div>
-              
-              <div class="card-meta">
-                📅 2026年9月23日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">マッチング TRUE LOVE</div>
-              
-              <div class="card-meta">
-                📅 2026年9月25日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">藁にもすがる獣たち</div>
-              
-              <div class="card-meta">
-                📅 2026年9月25日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">「メイドインアビス 烈日の黄金郷」【後編】7話〜12話</div>
-              
-              <div class="card-meta">
-                📅 2026年9月25日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">ハート・オブ・ビースト</div>
-              
-              <div class="card-meta">
-                📅 2026年9月25日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">【抱っこdeシネマ】トイ・ストーリー５</div>
-              
-              <div class="card-meta">
-                📅 2026年9月2日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://press.moviewalker.jp/th220/schedule/" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">白鳥とコウモリ</div>
-              
-              <div class="card-meta">
-                📅 2026年9月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定 / 札幌市内の映画館（中央区）で公開予定<br>
+                📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・シアターキノ・TOHOシネマズすすきの（中央区）で公開予定<br>
                 
                 <span class="source">映画館(MOVIE WALKER・公開予定)</span>
               </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">バックルームズ</div>
-              
-              <div class="card-meta">
-                📅 2026年9月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区） / ローソン・ユナイテッドシネマ札幌（札幌市中央区） / TOHOシネマズすすきの（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">6DAYS</div>
-              
-              <div class="card-meta">
-                📅 2026年9月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">THE RIBBON HERO リボンヒーロー</div>
-              
-              <div class="card-meta">
-                📅 2026年9月4日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">水曜どうでしょう祭UNITE2026 ライブ・ビューイング</div>
-              
-              <div class="card-meta">
-                📅 2026年9月5日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">【抱っこdeシネマ】バックルームズ</div>
-              
-              <div class="card-meta">
-                📅 2026年9月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
-            
-            <a class="card new" href="https://www.unitedcinemas.jp/sapporo/movie.php" target="_blank" rel="noopener">
-              <span class="badge">NEW</span>
-              <div class="card-title">「劇場版 少女☆歌劇 レヴュースタァライト」リバイバル上映</div>
-              
-              <div class="card-meta">
-                📅 2026年9月9日公開<br>
-                📍 ローソン・ユナイテッドシネマ札幌（札幌市中央区）<br>
-                
-                <span class="source">ローソン・ユナイテッドシネマ札幌(公式・公開予定)</span>
-              </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/th220/schedule/" target="_blank" rel="noopener">ローソン・ユナイテッドシネマ札幌 ↗</a><a class="card-link" href="https://press.moviewalker.jp/th592/schedule/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/th533/schedule/" target="_blank" rel="noopener">シアターキノ ↗</a><a class="card-link" href="https://press.moviewalker.jp/th828/schedule/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
             </div><h2>🏬 デパート催事 <span class="count">(1件)</span></h2><div class="cards">
-            <a class="card new" href="https://www.maruiimai.mistore.jp/sapporo.html" target="_blank" rel="noopener">
+            <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">Cosme＆BeautyUP～Early Autumn～</div>
               
@@ -1789,7 +1279,8 @@
                 
                 <span class="source">丸井今井札幌本店(催事)</span>
               </div>
-            </a>
+              <div class="card-links"><a class="card-link" href="https://www.maruiimai.mistore.jp/sapporo.html" target="_blank" rel="noopener">丸井今井札幌本店(催事) ↗</a></div>
+            </div>
             </div>
 </main>
 </body>
