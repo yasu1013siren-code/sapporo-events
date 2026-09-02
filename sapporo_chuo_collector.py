@@ -635,6 +635,13 @@ def collect_manual_events() -> Iterable[EventItem]:
             "place": "大丸札幌店 7階催事場（中央区）",
             "url": "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/",
         },
+        {
+            "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
+            "date_text": "2026年9月18日(金)〜",
+            "place": "札幌市内の映画館（中央区）",
+            "url": "https://www.cho-kaguyahime.com/theater/",
+            "tags": ["劇場版"],
+        },
         # 他の年次フェスもここに追加できます。例:
         # {
         #     "title": "さっぽろ雪まつり2027",
@@ -650,6 +657,7 @@ def collect_manual_events() -> Iterable[EventItem]:
             url=ev["url"],
             date_text=ev.get("date_text", ""),
             place=ev.get("place", ""),
+            tags=ev.get("tags", []),
         )
     log.info(f"手動登録イベント: {len(manual_events)}件")
 
@@ -815,7 +823,9 @@ def collect_movie_theaters() -> Iterable[EventItem]:
     log.info(f"映画館(上映中) 取得タイトル一覧: {all_titles}")
 
 
-_COMING_SOON_INFO_RE = re.compile(r"^(\d{4})年(\d{1,2})月(\d{1,2})日(?:公開|再上映)(?:、\d+分)?(?:、(.+))?$")
+_COMING_SOON_INFO_RE = re.compile(
+    r"^(\d{4})年(\d{1,2})月(\d{1,2})日(?:公開|再上映|再上映開始|上映開始|復活上映)(?:、\d+分)?(?:、(.+))?$"
+)
 
 
 def _parse_coming_soon_page(soup: BeautifulSoup):
