@@ -730,8 +730,8 @@ def collect_eventernote_major_venues(max_pages: int = 2) -> Iterable[EventItem]:
 SAPPORO_MOVIE_THEATERS = {
     "th220": "ローソン・ユナイテッドシネマ札幌",
     "th592": "札幌シネマフロンティア",
-    "th533": "シアターキノ",
     "th828": "TOHOシネマズすすきの",
+    # "th533": "シアターキノ",  # ご要望により映画カテゴリの対象から除外（ミニシアター系のため）
 }
 
 # 現在上映中の映画一覧には「アニメかどうか」の情報が付いていないため、
