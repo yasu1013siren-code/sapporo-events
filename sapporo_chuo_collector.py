@@ -137,7 +137,6 @@ CATEGORY_INCLUDE = {
     "🎮 アニメ": [
         "アニメ展示会", "アニメ原画展", "原画展", "複製原画展", "POP UP", "ポップアップ",
         "期間限定ショップ", "コラボカフェ",
-        "アニメ映画", "劇場版",
     ],
     "🎵 音楽ライブ": [
         "きたえーる", "hitaru", "Zepp Sapporo", "札幌ドーム", "真駒内セキスイハイムアイスアリーナ",
@@ -615,7 +614,11 @@ def collect_manual_events() -> Iterable[EventItem]:
     """自動収集が難しい大型の年次フェス等を手動で登録しておく場所。
     ここに追加した項目も、他の情報源と同じくclassify()でカテゴリ判定される
     （タイトルにCATEGORY_INCLUDEの語句が含まれていれば自動的に採用される）。
-    URLは重複判定のキーにもなるので、年ごとに変えるなどして使い回さないこと。"""
+    URLは重複判定のキーにもなるので、年ごとに変えるなどして使い回さないこと。
+
+    映画の場合は "release_date"（公開日）を指定しておくと、実行日がその日を
+    迎えたかどうかで自動的に「🍿 公開予定映画」→「🎬 映画」へタグが切り替わる
+    （公開日を過ぎたら手動で書き換える必要がない）。"""
     manual_events = [
         {
             "title": "2026さっぽろオータムフェスト",
@@ -640,7 +643,7 @@ def collect_manual_events() -> Iterable[EventItem]:
             "date_text": "2026年9月18日(金)〜",
             "place": "札幌市内の映画館（中央区）",
             "url": "https://www.cho-kaguyahime.com/theater/",
-            "tags": ["劇場版"],
+            "release_date": date(2026, 9, 18),  # この日を迎えると自動的に「映画上映中」に切り替わる
         },
         # 他の年次フェスもここに追加できます。例:
         # {
@@ -650,14 +653,26 @@ def collect_manual_events() -> Iterable[EventItem]:
         #     "url": "https://www.snowfes.com/#2027",
         # },
     ]
+    today = datetime.now().date()
     for ev in manual_events:
+        tags = list(ev.get("tags", []))
+        release_date = ev.get("release_date")
+        if release_date:
+            if today >= release_date:
+                tags = [t for t in tags if t != "公開予定映画"]
+                if "映画上映中" not in tags:
+                    tags.append("映画上映中")
+            else:
+                tags = [t for t in tags if t != "映画上映中"]
+                if "公開予定映画" not in tags:
+                    tags.append("公開予定映画")
         yield EventItem(
             source="手動登録(年次フェス)",
             title=ev["title"],
             url=ev["url"],
             date_text=ev.get("date_text", ""),
             place=ev.get("place", ""),
-            tags=ev.get("tags", []),
+            tags=tags,
         )
     log.info(f"手動登録イベント: {len(manual_events)}件")
 
