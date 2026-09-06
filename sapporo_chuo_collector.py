@@ -636,7 +636,12 @@ def collect_sapporo_factory() -> Iterable[EventItem]:
         if full_url in seen_urls:
             continue
         text = clean(a.get_text(" ", strip=True))
-        m = re.search(r"\d", text)
+        # 「2026年」「2026/9/12」のような本物の日付の始まりだけを対象にする。
+        # ページ内にはカレンダー表側（タイトルのみで日付情報を持たないリンク）と
+        # 下部一覧側（カテゴリ+日付+タイトルがまとまったリンク）の2種類が同じURLで
+        # 存在するため、単に「最初の数字」で判定すると表側の方を誤って拾ってしまう
+        # （例:タイトル中の「第20回」の「20」を日付と誤認する）ことがあるための対策。
+        m = re.search(r"\d{4}[年/]", text)
         if not m:
             continue
         date_start = m.start()
