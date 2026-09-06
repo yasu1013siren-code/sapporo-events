@@ -41,6 +41,9 @@ sapporo_chuo_collector.py
      https://www.maruiimai.mistore.jp/sapporo.html
      （大丸札幌店は催事ページがJavaScriptで動的生成されるため、今回は
       静的HTMLを取得するこのスクリプトでは対応できていません）
+  7.5 サッポロファクトリー（中央区北2条東4丁目、大型複合商業施設）公式サイトの
+      イベント情報。デパートと同様「デパート催事」として扱う。
+     https://sapporofactory.jp/event/
   8. 札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/
      シアターキノ/TOHOシネマズすすきの。いずれも中央区）の上映中アニメ映画
      https://press.moviewalker.jp/theater/108/
@@ -610,6 +613,53 @@ def collect_maruiimai() -> Iterable[EventItem]:
     log.info(f"丸井今井札幌本店(催事): {count}件")
 
 
+def collect_sapporo_factory() -> Iterable[EventItem]:
+    """サッポロファクトリー（中央区北2条東4丁目、大型複合商業施設）公式サイトの
+    イベント情報。ページ末尾に「カテゴリ 日付 タイトル」を1本のテキストにまとめた
+    リンク一覧があるため、そこから正規表現で日付部分とタイトル部分を切り分けて抽出する。
+    デパート同様、情報源そのものを「デパート催事」として扱う（催事場に限らずアトリウムや
+    館内各所でのイベント・ポップアップショップ・キャンペーン等をまとめて対象にする）。"""
+    url = "https://sapporofactory.jp/event/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    # 日付らしき文字（数字・年月日・曜日・区切り記号）が続く限り「日付」とみなし、
+    # それ以外の文字（かな漢字等）が現れた時点をタイトルの開始位置とする簡易パーサー。
+    date_run = re.compile(r"[0-9年月日祝土日火水木金/\-\(\)（）～〜・:.\u3000 ]+")
+    seen_urls = set()
+    count = 0
+    for a in soup.select('a[href*="/event/detail/"]'):
+        href = a.get("href", "")
+        if not href:
+            continue
+        full_url = href if href.startswith("http") else f"https://sapporofactory.jp{href}"
+        if full_url in seen_urls:
+            continue
+        text = clean(a.get_text(" ", strip=True))
+        m = re.search(r"\d", text)
+        if not m:
+            continue
+        date_start = m.start()
+        date_match = date_run.match(text[date_start:])
+        if not date_match:
+            continue
+        date_text = text[date_start:date_start + date_match.end()].strip()
+        title = text[date_start + date_match.end():].strip()
+        if not title or len(title) < 3:
+            continue
+        seen_urls.add(full_url)
+        count += 1
+        yield EventItem(
+            source="サッポロファクトリー(催事)",
+            title=title[:80],
+            url=full_url,
+            date_text=date_text[:40],
+            place="サッポロファクトリー",
+            tags=["デパート催事"],
+        )
+    log.info(f"サッポロファクトリー(催事): {count}件")
+
+
 def collect_manual_events() -> Iterable[EventItem]:
     """自動収集が難しい大型の年次フェス等を手動で登録しておく場所。
     ここに追加した項目も、他の情報源と同じくclassify()でカテゴリ判定される
@@ -951,6 +1001,7 @@ SOURCES = {
     "eventernote_major": collect_eventernote_major_venues,
     "mitsukoshi": collect_mitsukoshi,
     "maruiimai": collect_maruiimai,
+    "sapporo_factory": collect_sapporo_factory,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
     "manual": collect_manual_events,
