@@ -46,20 +46,13 @@ sapporo_chuo_collector(10).py
      シアターキノ/TOHOシネマズすすきの。いずれも中央区）の上映中アニメ映画
      https://press.moviewalker.jp/theater/108/
   9. 札幌PARCO／札幌ステラプレイス／アピア　各公式サイトのポップアップ・
-     期間限定ショップ情報（アニメ・ゲーム・漫画関連のみ採用）
+     期間限定ショップ情報（ジャンル不問。POP UP/期間限定ショップ等と確認できるもの）
   10. 大丸札幌店　公式SHOP BLOG（テナント各店のお知らせ記事一覧）
       https://shopblog.dmdepart.jp/sapporo/
       （大丸札幌店本体の「イベントカレンダー」はJavaScriptで動的生成されるため
        引き続き取得できないが、SHOP BLOGは静的HTMLのため取得可能）
   11. 狸小路商店街（moyuk SAPPORO含む）公式サイトの「ニュース&イベント」
       https://tanukikoji.or.jp/news-event/
-
-  🛍️ ポップアップストアカテゴリは、9〜11の情報源も含めて「アニメ・ゲーム・漫画関連」
-  のみに絞り込みます（ANIME_GAME_MANGA_KEYWORDSで判定。一般ブランドの期間限定
-  ショップは対象外）。ただし判定は簡易キーワード方式のため、キーワードに無い作品名
-  だけのタイトル（例:固有の作品名のみでジャンルを示す語が無い場合）は拾えないことが
-  あります。判定漏れがあれば ANIME_GAME_MANGA_KEYWORDS に作品名を追加するか、
-  GEMINI_API_KEY を設定してAI判定を有効にすると、キーワードに頼らずに判定できます。
 
   必要に応じて SOURCES 辞書に情報源を追加/削除してください。
   カテゴリ判定の基準は CATEGORY_INCLUDE / CATEGORY_EXCLUDE で調整できます。
@@ -165,27 +158,6 @@ CATEGORY_INCLUDE = {
     "🎬 映画": ["映画上映中"],  # 中央区内の主要映画館で上映中の全作品（collect_movie_theaters()がタグ付け）
     "🍿 公開予定映画": ["公開予定映画"],  # 2ヶ月以内に公開予定の映画（collect_upcoming_movies()がタグ付け）
 }
-# 🛍️ ポップアップストアは「ジャンルを問わない期間限定ショップ全般」ではなく、
-# アニメ・ゲーム・漫画関連のポップアップのみを対象にする（classify()で使用）。
-# ここに無いシリーズ名やジャンル語句があれば追加してください。
-ANIME_GAME_MANGA_KEYWORDS = [
-    "アニメ", "アニメーション", "漫画", "マンガ", "コミック", "COMIC",
-    "ゲーム", "GAME", "ゲームキャラクター",
-    "キャラクター", "声優", "原作", "コミカライズ",
-    "ジャンプ", "少年ジャンプ", "コミックス", "アニメイト",
-    "コラボカフェ", "コラボグッズ", "描き下ろし", "フィギュア",
-    # 主要作品名（判定漏れを減らすための例。ここに無い作品は下記の対応を検討してください）
-    "ガンダム", "ガンプラ", "プラモデル",
-    "鬼滅の刃", "呪術廻戦", "チェンソーマン", "ワンピース", "ドラゴンボール",
-    "名探偵コナン", "進撃の巨人", "ハイキュー", "東京リベンジャーズ",
-    "五等分の花嫁", "SPY×FAMILY", "スパイファミリー", "薬屋のひとりごと",
-    "ラブライブ", "初音ミク", "艦これ", "Fate/", "フェイト",
-    "ポケモン", "ポケットモンスター", "ゼルダ", "マリオ", "スプラトゥーン", "モンハン", "モンスターハンター",
-    "遊戯王", "銀魂", "鋼の錬金術師", "化物語", "ジョジョ", "こち亀",
-    "クレヨンしんちゃん", "ドラえもん", "サザエさん", "ちびまる子ちゃん", "鬼太郎", "プリキュア",
-    "ちいかわ", "すみっコぐらし", "リラックマ", "サンリオキャラクターズ",
-    "エウレカセブン", "しずくちゃん",
-]
 
 CATEGORY_EXCLUDE = {
     "🍜 飲食": ["レストラン", "居酒屋"],  # 普通の飲食店の宣伝は除外（"カフェ"は単体では除外しない。"カフェイベント"等の
@@ -230,11 +202,11 @@ AI_SYSTEM_PROMPT = """あなたは札幌市中央区の地域情報まとめサ�
   普通のレストラン・カフェ・居酒屋の宣伝は含めない。
 - 🎮 アニメ: アニメの原画展、企画展、特別展、コラボカフェ、複製原画展、物販イベントなど。
   声優イベント、アニメライブ、上映会、映画、舞台挨拶は含めない。
-- 🛍️ ポップアップストア: アニメ・ゲーム・漫画関連の、POP UP/ポップアップストア/期間限定ショップ/
+- 🛍️ ポップアップストア: ジャンルを問わず、POP UP/ポップアップストア/期間限定ショップ/
   期間限定店/POP UP SHOP/LIMITED SHOP等の期間限定物販・ブランドショップ。
-  アニメ・ゲーム・漫画に関係しない一般ブランドの期間限定ショップ（アパレル・コスメ・雑貨など）は含めない。
   「札幌PARCO」「札幌ステラプレイス」「アピア」「大丸札幌店」「狸小路商店街」などのポップアップ専用・
-  ショップニュース情報源から取得した項目は、アニメ・ゲーム・漫画関連であることが確認できる場合のみ採用する。
+  ショップニュース情報源から取得した項目は、通常店舗の営業情報ではなく、期間限定販売・期間限定
+  ショップであることが確認できる場合に採用する。
 - 🎵 音楽ライブ: きたえーる、hitaru、Zepp Sapporo、札幌ドーム、真駒内セキスイハイムアイスアリーナ等の
   大型会場、または「全国ツアー」「ワンマン」等メジャー公演を示すもの。ジャンルは邦楽・洋楽(ポップス/ロック等)
   のみ。オーケストラ・クラシック・吹奏楽・合唱・オペラ・バレエなどは含めない。小規模なライブハウス公演も含めない。
@@ -392,21 +364,15 @@ def classify(item: EventItem) -> list:
     （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
     haystack = normalize(f"{item.title} {item.place} {' '.join(item.tags)}")
     haystack_lower = haystack.lower()
-    is_anime_game_manga = any(normalize(k).lower() in haystack_lower for k in ANIME_GAME_MANGA_KEYWORDS)
     matched = []
     for label, includes in CATEGORY_INCLUDE.items():
-        if label == "🛍️ ポップアップストア":
-            # ポップアップストアは「アニメ・ゲーム・漫画」関連のみを対象にする。
-            # 専用コレクター（PARCO/ステラプレイス/アピア等）由来の情報でも、
-            # ジャンルがアニメ・ゲーム・漫画と判別できないものは対象外にする。
-            looks_like_popup = (
-                any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
-                or any(normalize(inc).lower() in haystack_lower for inc in includes)
-            )
-            if looks_like_popup and is_anime_game_manga:
-                matched.append(label)
-            continue
-        if any(normalize(inc).lower() in haystack_lower for inc in includes):
+        # 専用コレクターが「ポップアップ」と明示した情報は、
+        # タイトルにPOP UP等の文字がなくてもポップアップカテゴリへ入れる。
+        forced_popup = (
+            label == "🛍️ ポップアップストア"
+            and any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
+        )
+        if forced_popup or any(normalize(inc).lower() in haystack_lower for inc in includes):
             excludes = CATEGORY_EXCLUDE.get(label, [])
             if any(exc in haystack for exc in excludes):
                 continue
