@@ -184,6 +184,7 @@ ANIME_GAME_MANGA_KEYWORDS = [
     "遊戯王", "銀魂", "鋼の錬金術師", "化物語", "ジョジョ", "こち亀",
     "クレヨンしんちゃん", "ドラえもん", "サザエさん", "ちびまる子ちゃん", "鬼太郎", "プリキュア",
     "ちいかわ", "すみっコぐらし", "リラックマ", "サンリオキャラクターズ",
+    "エウレカセブン", "しずくちゃん",
 ]
 
 CATEGORY_EXCLUDE = {
@@ -208,7 +209,13 @@ CATEGORY_ORDER = list(CATEGORY_INCLUDE.keys()) + [DEPARTMENT_CATEGORY]
 # 設定されていない場合は、これまで通りキーワードだけの判定で動作する
 # （AI無しでも問題なく使える設計）。
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = "gemini-flash-latest"  # 常に最新の安定版Flashモデルを指すエイリアス（個別モデル名の廃止に強い）
+GEMINI_MODEL = "gemini-3.5-flash"  # 安定版(GA)モデルを直接指定。
+# 以前は "gemini-flash-latest" というエイリアスを使っていたが、このエイリアスは
+# Google側の更新で中身が入れ替わることがあり、一時的にプレビュー版（レート制限が
+# 厳しく503/429エラーが出やすい）を指す期間があったため、個別の安定版モデル名を
+# 直接指定する方式に変更した。将来このモデルが廃止された場合は、Google公式の
+# モデル一覧 https://ai.google.dev/gemini-api/docs/models で後継の安定版
+# （Stableと明記されているもの）を確認し、ここを書き換えてください。
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 AI_ENABLED = bool(GEMINI_API_KEY)
 AI_REQUEST_INTERVAL_SEC = 4.5  # 無料枠のレート制限(1分あたりのリクエスト数)に配慮した間隔
@@ -252,7 +259,14 @@ def call_gemini(user_content: str) -> Optional[str]:
                 json={
                     "system_instruction": {"parts": [{"text": AI_SYSTEM_PROMPT}]},
                     "contents": [{"parts": [{"text": user_content}]}],
-                    "generationConfig": {"temperature": 0.2, "maxOutputTokens": 200},
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 1024,
+                        # gemini-3.5-flash は既定で「思考」が有効で、思考に使うトークンも
+                        # maxOutputTokensの上限を共有するため、思考を無効化しないと
+                        # 肝心の回答本文が出力される前に上限に達して途中で切れてしまう。
+                        "thinkingConfig": {"thinkingBudget": 0},
+                    },
                 },
                 timeout=AI_TIMEOUT,
             )
@@ -262,8 +276,12 @@ def call_gemini(user_content: str) -> Optional[str]:
         except Exception as e:
             last_error = e
             if attempt <= AI_MAX_RETRIES:
-                log.warning(f"Gemini API 呼び出し失敗(試行{attempt}回目、再試行します): {e}")
-                time.sleep(3)
+                # 429(リクエスト過多)/503(サーバー混雑)は一時的な混雑が原因のことが多いため、
+                # 通常のタイムアウト等より長めに待ってから再試行する。
+                status_code = getattr(getattr(e, "response", None), "status_code", None)
+                wait_sec = 20 if status_code in (429, 503) else 3
+                log.warning(f"Gemini API 呼び出し失敗(試行{attempt}回目、{wait_sec}秒待って再試行します): {e}")
+                time.sleep(wait_sec)
             continue
         finally:
             time.sleep(AI_REQUEST_INTERVAL_SEC)

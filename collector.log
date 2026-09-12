@@ -1234,3 +1234,100 @@
 2026-09-12 16:18:24,626 [INFO] HTMLレポートを更新しました → C:\Users\user\projects\sapporo-events\data\index.html
 2026-09-12 16:18:24,628 [INFO] チェック件数(延べ): 581 / 対象カテゴリ一致: 473 / 新着: 1 / AI判定利用: 0件(無効:GEMINI_API_KEY未設定)
 2026-09-12 16:18:24,628 [INFO] === 完了 ===
+2026-09-12 16:33:13,054 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:33:13,074 [INFO] 手動登録イベント: 4件
+2026-09-12 16:33:13,129 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:33:13,130 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:33:15,987 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:23,562 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:35,637 [WARNING] Gemini API 呼び出し失敗(再試行含め断念): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:35,709 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:43,281 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:55,356 [WARNING] Gemini API 呼び出し失敗(再試行含め断念): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:33:55,431 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:03,038 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:15,110 [WARNING] Gemini API 呼び出し失敗(再試行含め断念): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:15,188 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:22,770 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:34,847 [WARNING] Gemini API 呼び出し失敗(再試行含め断念): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:34,916 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:34:42,502 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 'latin-1' codec can't encode characters in position 0-5: ordinal not in range(256)
+2026-09-12 16:37:38,643 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:37:38,662 [INFO] 手動登録イベント: 4件
+2026-09-12 16:37:38,703 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:37:38,704 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:38:26,993 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 503 Server Error: Service Unavailable for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+2026-09-12 16:38:34,812 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+2026-09-12 16:39:29,518 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 503 Server Error: Service Unavailable for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+2026-09-12 16:39:37,344 [WARNING] Gemini API 呼び出し失敗(試行2回目、再試行します): 429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+2026-09-12 16:42:16,350 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:42:16,353 [INFO] 手動登録イベント: 4件
+2026-09-12 16:42:16,398 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:42:16,398 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:42:35,135 [WARNING] Gemini API 呼び出し失敗(試行1回目、再試行します): 429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+2026-09-12 16:45:39,578 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:45:39,582 [INFO] 手動登録イベント: 4件
+2026-09-12 16:45:39,627 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:45:39,627 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:45:52,441 [WARNING] Gemini応答のJSON解析に失敗: Unterminated string starting at: line 1 column 20 (char 19) / 応答内容: '{"categories": [], "bl'
+2026-09-12 16:46:05,099 [WARNING] Gemini応答のJSON解析に失敗: Expecting value: line 1 column 28 (char 27) / 応答内容: '{"categories": [], "blurb":'
+2026-09-12 16:46:14,954 [WARNING] Gemini応答のJSON解析に失敗: Expecting value: line 1 column 28 (char 27) / 応答内容: '{"categories": [], "blurb":'
+2026-09-12 16:46:26,028 [WARNING] Gemini応答のJSON解析に失敗: Expecting value: line 1 column 28 (char 27) / 応答内容: '{"categories": [], "blurb":'
+2026-09-12 16:46:34,844 [WARNING] Gemini応答のJSON解析に失敗: Unterminated string starting at: line 1 column 20 (char 19) / 応答内容: '{"categories": [], "bl'
+2026-09-12 16:46:47,053 [WARNING] Gemini応答のJSON解析に失敗: Unterminated string starting at: line 1 column 20 (char 19) / 応答内容: '{"categories": [], "blurb'
+2026-09-12 16:47:22,315 [WARNING] Gemini応答のJSON解析に失敗: Unterminated string starting at: line 1 column 20 (char 19) / 応答内容: '{"categories": [], "'
+2026-09-12 16:47:30,647 [WARNING] Gemini応答のJSON解析に失敗: Expecting value: line 1 column 15 (char 14) / 応答内容: '{"categories":'
+2026-09-12 16:47:57,304 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:47:57,307 [INFO] 手動登録イベント: 4件
+2026-09-12 16:47:57,339 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:47:57,339 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:48:21,585 [WARNING] Gemini API 呼び出し失敗(試行1回目、20秒待って再試行します): 503 Server Error: Service Unavailable for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+2026-09-12 16:49:44,224 [WARNING] Gemini API 呼び出し失敗(試行1回目、20秒待って再試行します): 429 Client Error: Too Many Requests for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+2026-09-12 16:53:41,910 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-12 16:53:41,911 [INFO] 手動登録イベント: 4件
+2026-09-12 16:53:41,947 [INFO] 既存データ 560 件を最新の分類基準で再判定しました
+2026-09-12 16:53:41,948 [INFO] --- 情報源: satsuibe ---
+2026-09-12 16:53:44,698 [INFO] サツイベ: 1ページ目 27件
+2026-09-12 16:53:47,073 [INFO] サツイベ: 2ページ目 13件
+2026-09-12 16:53:49,516 [INFO] サツイベ: 3ページ目 12件
+2026-09-12 16:53:51,937 [INFO] サツイベ: 4ページ目 15件
+2026-09-12 16:53:54,320 [INFO] サツイベ: 5ページ目 3件
+2026-09-12 16:53:56,808 [INFO] サツイベ: 6ページ目 0件
+2026-09-12 16:53:56,808 [INFO] --- 情報源: chikaho ---
+2026-09-12 16:53:58,780 [INFO] チ・カ・ホ: 0件
+2026-09-12 16:53:58,780 [INFO] --- 情報源: cube_garden ---
+2026-09-12 16:54:00,584 [INFO] cube garden: 2件（日付らしき記載がある行のみ抽出。要目視確認）
+2026-09-12 16:54:00,584 [INFO] --- 情報源: walkerplus_live ---
+2026-09-12 16:54:03,915 [INFO] ウォーカープラス(音楽): 10件チェック（メジャー会場/ツアー語句一致のみ後で採用）
+2026-09-12 16:54:03,916 [INFO] --- 情報源: walkerplus_anime ---
+2026-09-12 16:54:05,571 [INFO] ウォーカープラス(アニメ): 0件チェック（原画展/POP UP等の語句一致のみ後で採用）
+2026-09-12 16:54:05,572 [INFO] --- 情報源: eventernote_major ---
+2026-09-12 16:54:24,143 [INFO] イベンターノート(主要会場): 300件チェック
+2026-09-12 16:54:24,143 [INFO] --- 情報源: mitsukoshi ---
+2026-09-12 16:54:29,813 [INFO] 札幌三越(催事): 6件
+2026-09-12 16:54:29,813 [INFO] --- 情報源: maruiimai ---
+2026-09-12 16:54:31,559 [INFO] 丸井今井札幌本店(催事): 4件
+2026-09-12 16:54:31,559 [INFO] --- 情報源: sapporo_factory ---
+2026-09-12 16:54:33,333 [INFO] サッポロファクトリー(催事): 14件
+2026-09-12 16:54:33,333 [INFO] --- 情報源: sapporo_parco_popup ---
+2026-09-12 16:55:01,722 [INFO] 札幌PARCO(ポップアップ): 23件
+2026-09-12 16:55:01,723 [INFO] --- 情報源: stellarplace_popup ---
+2026-09-12 16:55:06,792 [INFO] 札幌ステラプレイス(ポップアップ): 0件
+2026-09-12 16:55:06,793 [INFO] --- 情報源: apia_popup ---
+2026-09-12 16:55:08,482 [INFO] アピア(ポップアップ): 0件
+2026-09-12 16:55:08,482 [INFO] --- 情報源: daimaru_sapporo_popup ---
+2026-09-12 16:55:19,708 [INFO] 大丸札幌店(SHOP BLOG): 5件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）
+2026-09-12 16:55:19,708 [INFO] --- 情報源: tanukikoji_popup ---
+2026-09-12 16:55:29,469 [INFO] 狸小路商店街(ニュース&イベント): 0件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）
+2026-09-12 16:55:29,470 [INFO] --- 情報源: movie_theaters ---
+2026-09-12 16:56:54,843 [INFO] 映画館(上映中): 42件（うちアニメ映画と判定: 9件）
+2026-09-12 16:56:54,844 [INFO] 映画館(上映中) 取得タイトル一覧: ['ルックバック', '5秒で完全犯罪を生成する方法', '最終楽章 響け！ユーフォニアム 後編', '映画「宇宙なんちゃら こてつくん」うっかり出てきた宇宙人を探せ！', 'ASKA CONCERT 2026 昭和が見ていたクリスマス!?', '劇場版 少女☆歌劇 レヴュースタァライト', 'オデュッセイア', '白鳥とコウモリ', 'バックルームズ', 'THE RIBBON HERO リボンヒーロー', '6DAYS', '劇場版 魔法少女まどか☆マギカ 〈ワルプルギスの廻天〉', '時には懺悔を', 'ラスト・サバイバー', 'シェルター', '私はあなたを知らない、', 'オークストリートの異変', 'ブルーロック', 'あの星が降る丘で、君とまた出会いたい。', 'ミニオンズ＆モンスターズ', '映画クレヨンしんちゃん 奇々怪々！オラの妖怪バケ～ション', 'モアナと伝説の海', 'スパイダーマン：ブランド・ニュー・デイ', '映画ちいかわ 人魚の島のひみつ', 'キングダム 魂の決戦', 'トイ・ストーリー５', 'Michael／マイケル', 'オアシス：ドント・ルック・バック・イン・アンガー', 'バッファロー’66', 'SAMANSA presents 世界が認めた栄冠のショート傑作選', 'SEKIRO: NO DEFEAT', 'ベベフィン・ザ・ムービー：うたとまほうのピンキッツワールド', 'カーズ', '『獣兵衛忍風帖』4K', 'ホーム スイート ホーム', '劇場版 THE ALFEE 3000PREMIUM トラベリングバンドが刻んだ3000本の奇跡と軌跡', '冴えないボクと映えるキミ', 'ハルバーシュタットの埋蔵金', '平行と垂直', '劇場版 TUBE 40th Anniversary Live & Documentary 〜40周年の航海記〜', 'パウ・パトロール ザ・ダイノ・ムービー', '劇場版ブルーロック -EPISODE 凪- TOHOシネマズ']
+2026-09-12 16:56:54,844 [INFO] --- 情報源: upcoming_movies ---
+2026-09-12 16:57:19,786 [INFO] 映画館(公開予定): 101件（うちアニメ映画と判定: 5件）
+2026-09-12 16:57:19,786 [INFO] 映画館(公開予定) フィルタ前の全件(183件): [('踊る大捜査線 N.E.W. メトロポリスを駆け抜けろ！', '2026年9月18日', ''), ('モネと時間旅行', '2026年9月18日', ''), ('カーンターラ 炎の決戦', '2026年9月18日', ''), ('ドラッグストア・カウボーイ デジタルリマスター版', '2026年9月18日', ''), ('ノクターン・イン・ブラック', '2026年9月18日', ''), ('リサ・ラーソンがいた時間', '2026年9月18日', ''), ('ワンオペレーション', '2026年9月18日', ''), ('さとこはいつも', '2026年9月18日', ''), ('映画名探偵プリキュア！不思議な庭と2人の秘密', '2026年9月18日', ''), ('八つ墓村', '2026年9月18日', ''), ('アベンジャーズ／エンドゲーム：アンコール', '2026年9月23日', ''), ('マーダー・イン・ザ・フロント・ロウ～俺たちのベイエリア・スラッシュ物語～', '2026年9月25日', ''), ('デス・バイ・メタル～デス・メタルを作った男～', '2026年9月25日', ''), ('眺めのいい部屋 4K', '2026年9月25日', ''), ('ユートピア 狂宴', '2026年9月25日', ''), ('我々は宇宙人', '2026年9月25日', ''), ('undo + PiCNiC 4Kリマスター', '2026年9月25日', ''), ('しびれ', '2026年9月25日', ''), ('縁の手紙', '2026年9月25日', ''), ('ハート・オブ・ビースト', '2026年9月25日', ''), ('mentor', '2026年10月16日', ''), ('踊る大捜査線 N.E.W. メトロポリスを駆け抜けろ！', '2026年9月18日', ''), ('オデュッセイア', '2026年9月11日', ''), ('襲名', '2026年9月25日', ''), ('ファーストライド', '2026年9月25日', ''), ('ナギダイアリー', '2026年9月25日', ''), ('シャドウワーク', '2026年9月25日', ''), ('藁にもすがる獣たち', '2026年9月25日', ''), ('マッチング TRUE LOVE', '2026年9月25日', ''), ('雌鶏', '2026年9月25日', '')]...
+2026-09-12 16:57:19,787 [INFO] --- 情報源: manual ---
+2026-09-12 16:57:19,788 [INFO] 手動登録イベント: 4件
+2026-09-12 16:57:19,796 [INFO] 新着情報はありませんでした。
+2026-09-12 16:57:19,815 [INFO] HTMLレポートを更新しました → C:\Users\user\projects\sapporo-events\data\index.html
+2026-09-12 16:57:19,817 [INFO] チェック件数(延べ): 581 / 対象カテゴリ一致: 474 / 新着: 0 / AI判定利用: 0件(無効:GEMINI_API_KEY未設定)
+2026-09-12 16:57:19,817 [INFO] === 完了 ===
