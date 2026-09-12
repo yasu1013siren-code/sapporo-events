@@ -721,6 +721,26 @@ def _parse_popup_date_text(text: str) -> str:
     return ""
 
 
+# PARCO/ステラプレイス/アピアの各ポップアップ収集関数に共通する、
+# 「イベントではなくサイト内ナビゲーション（言語切替・フロア案内等）のリンクを
+# 誤って拾ってしまう」問題への対策。<a>タグの祖先にnav/header/footerが
+# あるか、あるいはタイトル自体が既知のナビゲーション文言と一致する場合は除外する。
+_POPUP_NAV_EXCLUDE_TITLES = {
+    "日本語", "english", "简体中文", "繁體中文", "繁体字", "简体字", "한국어",
+    "ภาษาไทย", "tax free", "フロア一覧", "レストラン・カフェ", "ショップを探す",
+    "ショップからのお知らせ", "パルコからのお知らせ", "parcoメンバーズ",
+    "イベント・ポップアップ", "サイトマップ", "お問い合わせ", "アクセス",
+    "営業時間", "フロアガイド", "ニュース一覧", "お知らせ一覧", "店舗一覧",
+}
+
+
+def _is_nav_or_utility_link(a) -> bool:
+    if a.find_parent(["nav", "header", "footer"]) is not None:
+        return True
+    title_norm = clean(a.get_text(" ", strip=True)).strip().lower()
+    return title_norm in _POPUP_NAV_EXCLUDE_TITLES
+
+
 def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
     """札幌PARCO公式「イベント・ポップアップ」ページからPOPUP項目だけを取得。"""
     url = "https://sapporo.parco.jp/event/?page=1"
@@ -734,6 +754,8 @@ def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
     for a in soup.find_all("a", href=True):
         title = clean(a.get_text(" ", strip=True))
         if not title:
+            continue
+        if _is_nav_or_utility_link(a):
             continue
 
         block = a
@@ -814,6 +836,8 @@ def collect_stellarplace_popup(max_items: int = 50) -> Iterable[EventItem]:
             title = clean(a.get_text(" ", strip=True))
             if not title:
                 continue
+            if _is_nav_or_utility_link(a):
+                continue
 
             node = a
             block_text = title
@@ -883,6 +907,8 @@ def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
     for a in soup.find_all("a", href=True):
         title = clean(a.get_text(" ", strip=True))
         if not title:
+            continue
+        if _is_nav_or_utility_link(a):
             continue
 
         node = a
@@ -1493,6 +1519,7 @@ def fetch_all_current(conn: sqlite3.Connection) -> list:
 
 _FULL_DATE_RE = re.compile(r"(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})")
 _SHORT_DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
+_SHORT_SLASH_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})/(\d{1,2})(?!\d)")
 
 
 def parse_date_range(date_text: str, today: date):
@@ -1520,6 +1547,13 @@ def parse_date_range(date_text: str, today: date):
     for m in _SHORT_DATE_RE.finditer(date_text):
         if _inside_full_span(m.start()):
             continue  # フル表記の一部として既に拾っている日付なので重複させない
+        matches.append((None, int(m.group(1)), int(m.group(2))))
+
+    # 「2026/9/11〜9/22」のように、範囲の後半が年省略のスラッシュ形式（9/22）で
+    # 書かれるケースにも対応する（"月","日"を使わないため上のSHORT_DATE_REでは拾えない）。
+    for m in _SHORT_SLASH_DATE_RE.finditer(date_text):
+        if _inside_full_span(m.start()):
+            continue
         matches.append((None, int(m.group(1)), int(m.group(2))))
 
     dates = []
