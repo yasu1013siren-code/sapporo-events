@@ -39,14 +39,27 @@ sapporo_chuo_collector(10).py
      https://www.mitsukoshi.mistore.jp/sapporo.html
   7. 丸井今井札幌本店（中央区南1条西2）公式サイトの催事情報
      https://www.maruiimai.mistore.jp/sapporo.html
-     （大丸札幌店は催事ページがJavaScriptで動的生成されるため、今回は
-      静的HTMLを取得するこのスクリプトでは対応できていません）
   7.5 サッポロファクトリー（中央区北2条東4丁目、大型複合商業施設）公式サイトの
       イベント情報。デパートと同様「デパート催事」として扱う。
      https://sapporofactory.jp/event/
   8. 札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/
      シアターキノ/TOHOシネマズすすきの。いずれも中央区）の上映中アニメ映画
      https://press.moviewalker.jp/theater/108/
+  9. 札幌PARCO／札幌ステラプレイス／アピア　各公式サイトのポップアップ・
+     期間限定ショップ情報（アニメ・ゲーム・漫画関連のみ採用）
+  10. 大丸札幌店　公式SHOP BLOG（テナント各店のお知らせ記事一覧）
+      https://shopblog.dmdepart.jp/sapporo/
+      （大丸札幌店本体の「イベントカレンダー」はJavaScriptで動的生成されるため
+       引き続き取得できないが、SHOP BLOGは静的HTMLのため取得可能）
+  11. 狸小路商店街（moyuk SAPPORO含む）公式サイトの「ニュース&イベント」
+      https://tanukikoji.or.jp/news-event/
+
+  🛍️ ポップアップストアカテゴリは、9〜11の情報源も含めて「アニメ・ゲーム・漫画関連」
+  のみに絞り込みます（ANIME_GAME_MANGA_KEYWORDSで判定。一般ブランドの期間限定
+  ショップは対象外）。ただし判定は簡易キーワード方式のため、キーワードに無い作品名
+  だけのタイトル（例:固有の作品名のみでジャンルを示す語が無い場合）は拾えないことが
+  あります。判定漏れがあれば ANIME_GAME_MANGA_KEYWORDS に作品名を追加するか、
+  GEMINI_API_KEY を設定してAI判定を有効にすると、キーワードに頼らずに判定できます。
 
   必要に応じて SOURCES 辞書に情報源を追加/削除してください。
   カテゴリ判定の基準は CATEGORY_INCLUDE / CATEGORY_EXCLUDE で調整できます。
@@ -152,6 +165,27 @@ CATEGORY_INCLUDE = {
     "🎬 映画": ["映画上映中"],  # 中央区内の主要映画館で上映中の全作品（collect_movie_theaters()がタグ付け）
     "🍿 公開予定映画": ["公開予定映画"],  # 2ヶ月以内に公開予定の映画（collect_upcoming_movies()がタグ付け）
 }
+# 🛍️ ポップアップストアは「ジャンルを問わない期間限定ショップ全般」ではなく、
+# アニメ・ゲーム・漫画関連のポップアップのみを対象にする（classify()で使用）。
+# ここに無いシリーズ名やジャンル語句があれば追加してください。
+ANIME_GAME_MANGA_KEYWORDS = [
+    "アニメ", "アニメーション", "漫画", "マンガ", "コミック", "COMIC",
+    "ゲーム", "GAME", "ゲームキャラクター",
+    "キャラクター", "声優", "原作", "コミカライズ",
+    "ジャンプ", "少年ジャンプ", "コミックス", "アニメイト",
+    "コラボカフェ", "コラボグッズ", "描き下ろし", "フィギュア",
+    # 主要作品名（判定漏れを減らすための例。ここに無い作品は下記の対応を検討してください）
+    "ガンダム", "ガンプラ", "プラモデル",
+    "鬼滅の刃", "呪術廻戦", "チェンソーマン", "ワンピース", "ドラゴンボール",
+    "名探偵コナン", "進撃の巨人", "ハイキュー", "東京リベンジャーズ",
+    "五等分の花嫁", "SPY×FAMILY", "スパイファミリー", "薬屋のひとりごと",
+    "ラブライブ", "初音ミク", "艦これ", "Fate/", "フェイト",
+    "ポケモン", "ポケットモンスター", "ゼルダ", "マリオ", "スプラトゥーン", "モンハン", "モンスターハンター",
+    "遊戯王", "銀魂", "鋼の錬金術師", "化物語", "ジョジョ", "こち亀",
+    "クレヨンしんちゃん", "ドラえもん", "サザエさん", "ちびまる子ちゃん", "鬼太郎", "プリキュア",
+    "ちいかわ", "すみっコぐらし", "リラックマ", "サンリオキャラクターズ",
+]
+
 CATEGORY_EXCLUDE = {
     "🍜 飲食": ["レストラン", "居酒屋"],  # 普通の飲食店の宣伝は除外（"カフェ"は単体では除外しない。"カフェイベント"等の
                                        # 具体的なイベント名だけを拾うようにしているため、単なるカフェの宣伝はそもそも
@@ -189,10 +223,11 @@ AI_SYSTEM_PROMPT = """あなたは札幌市中央区の地域情報まとめサ�
   普通のレストラン・カフェ・居酒屋の宣伝は含めない。
 - 🎮 アニメ: アニメの原画展、企画展、特別展、コラボカフェ、複製原画展、物販イベントなど。
   声優イベント、アニメライブ、上映会、映画、舞台挨拶は含めない。
-- 🛍️ ポップアップストア: ジャンルを問わず、POP UP/ポップアップストア/期間限定ショップ/
+- 🛍️ ポップアップストア: アニメ・ゲーム・漫画関連の、POP UP/ポップアップストア/期間限定ショップ/
   期間限定店/POP UP SHOP/LIMITED SHOP等の期間限定物販・ブランドショップ。
-  「札幌PARCO」「札幌ステラプレイス」「アピア」などのポップアップ専用・ショップニュース情報源から
-  取得した項目は、通常店舗の営業情報ではなく、期間限定販売・期間限定ショップであることが確認できる場合に採用する。
+  アニメ・ゲーム・漫画に関係しない一般ブランドの期間限定ショップ（アパレル・コスメ・雑貨など）は含めない。
+  「札幌PARCO」「札幌ステラプレイス」「アピア」「大丸札幌店」「狸小路商店街」などのポップアップ専用・
+  ショップニュース情報源から取得した項目は、アニメ・ゲーム・漫画関連であることが確認できる場合のみ採用する。
 - 🎵 音楽ライブ: きたえーる、hitaru、Zepp Sapporo、札幌ドーム、真駒内セキスイハイムアイスアリーナ等の
   大型会場、または「全国ツアー」「ワンマン」等メジャー公演を示すもの。ジャンルは邦楽・洋楽(ポップス/ロック等)
   のみ。オーケストラ・クラシック・吹奏楽・合唱・オペラ・バレエなどは含めない。小規模なライブハウス公演も含めない。
@@ -335,19 +370,25 @@ def is_sapporo_venue(venue_text: str) -> bool:
 
 
 def classify(item: EventItem) -> list:
-    """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ のどれに該当するか判定
+    """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ/ポップアップ のどれに該当するか判定
     （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
     haystack = normalize(f"{item.title} {item.place} {' '.join(item.tags)}")
     haystack_lower = haystack.lower()
+    is_anime_game_manga = any(normalize(k).lower() in haystack_lower for k in ANIME_GAME_MANGA_KEYWORDS)
     matched = []
     for label, includes in CATEGORY_INCLUDE.items():
-        # 専用コレクターが「ポップアップ」と明示した情報は、
-        # タイトルにPOP UP等の文字がなくてもポップアップカテゴリへ入れる。
-        forced_popup = (
-            label == "🛍️ ポップアップストア"
-            and any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
-        )
-        if forced_popup or any(normalize(inc).lower() in haystack_lower for inc in includes):
+        if label == "🛍️ ポップアップストア":
+            # ポップアップストアは「アニメ・ゲーム・漫画」関連のみを対象にする。
+            # 専用コレクター（PARCO/ステラプレイス/アピア等）由来の情報でも、
+            # ジャンルがアニメ・ゲーム・漫画と判別できないものは対象外にする。
+            looks_like_popup = (
+                any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
+                or any(normalize(inc).lower() in haystack_lower for inc in includes)
+            )
+            if looks_like_popup and is_anime_game_manga:
+                matched.append(label)
+            continue
+        if any(normalize(inc).lower() in haystack_lower for inc in includes):
             excludes = CATEGORY_EXCLUDE.get(label, [])
             if any(exc in haystack for exc in excludes):
                 continue
@@ -901,6 +942,116 @@ def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
     log.info(f"アピア(ポップアップ): {count}件")
 
 
+def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
+    """大丸札幌店公式SHOP BLOG（テナント各店のお知らせ記事一覧）からアニメ・ゲーム・
+    漫画関連のPOPUP/期間限定ショップ/コラボカフェ等だけを取得する。
+    大丸札幌店本体の「イベントカレンダー」はJavaScriptで動的生成されるため取得できないが、
+    こちらのSHOP BLOGは静的HTMLで一覧が出力されるため取得可能。"""
+    seen = set()
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = "https://shopblog.dmdepart.jp/sapporo/" if page == 1 else f"https://shopblog.dmdepart.jp/sapporo/?p={page}"
+        soup = fetch(url)
+        if soup is None:
+            continue
+        for a in soup.find_all("a", href=True):
+            href = a.get("href", "")
+            if "/sapporo/detail/" not in href:
+                continue
+            title = clean(a.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
+            normalized = normalize(title).lower()
+            if not any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
+            ]):
+                continue
+            full_url = href if href.startswith("http") else f"https://shopblog.dmdepart.jp{href}"
+            if full_url in seen:
+                continue
+            date_text = ""
+            m = re.search(r"\d{4}\.\d{1,2}\.\d{1,2}", title)
+            if m:
+                date_text = m.group(0)
+            seen.add(full_url)
+            count += 1
+            yield EventItem(
+                source="大丸札幌店(SHOP BLOG)",
+                title=title[:100],
+                url=full_url,
+                date_text=date_text,
+                place="大丸札幌店",
+                tags=["ポップアップストア", "POPUP専用ソース"],
+            )
+            if count >= max_items:
+                log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+                return
+        time.sleep(REQUEST_INTERVAL_SEC)
+    log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+
+
+def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
+    """狸小路商店街（moyuk SAPPORO等を含む）公式サイトの「ニュース&イベント」一覧から
+    アニメ・ゲーム・漫画関連のPOPUP/期間限定ショップ等だけを取得する。"""
+    seen = set()
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = "https://tanukikoji.or.jp/news-event/" if page == 1 else f"https://tanukikoji.or.jp/news-event/page/{page}/"
+        soup = fetch(url)
+        if soup is None:
+            continue
+        for h in soup.find_all(["h2", "h3"]):
+            a = h.find("a", href=True)
+            if a is None:
+                continue
+            href = a.get("href", "")
+            if "/news-event/" not in href or href.rstrip("/").endswith("news-event"):
+                continue
+            title = clean(a.get_text(" ", strip=True))
+            if not title:
+                continue
+
+            # 見出しの後ろに続く説明文＋日付らしき行も合わせて拾う（同じ記事ブロック内）
+            block_text = title
+            node = h
+            for _ in range(4):
+                nxt = node.find_next_sibling()
+                if nxt is None:
+                    break
+                candidate = clean(nxt.get_text(" ", strip=True))
+                block_text += " " + candidate
+                node = nxt
+                if len(block_text) > 400:
+                    break
+
+            normalized = normalize(block_text).lower()
+            if not any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
+            ]):
+                continue
+
+            full_url = href if href.startswith("http") else f"https://tanukikoji.or.jp{href}"
+            if full_url in seen:
+                continue
+
+            seen.add(full_url)
+            count += 1
+            yield EventItem(
+                source="狸小路商店街(ニュース&イベント)",
+                title=re.sub(r"^\s*【終了しました】\s*", "", title)[:100],
+                url=full_url,
+                date_text=_parse_popup_date_text(block_text)[:60],
+                place="狸小路商店街",
+                tags=["ポップアップストア", "POPUP専用ソース"],
+            )
+            if count >= max_items:
+                log.info(f"狸小路商店街(ニュース&イベント): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+                return
+        time.sleep(REQUEST_INTERVAL_SEC)
+    log.info(f"狸小路商店街(ニュース&イベント): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+
+
+
 
 def collect_manual_events() -> Iterable[EventItem]:
     """自動収集が難しい大型の年次フェス等を手動で登録しておく場所。
@@ -1247,6 +1398,8 @@ SOURCES = {
     "sapporo_parco_popup": collect_sapporo_parco_popup,
     "stellarplace_popup": collect_stellarplace_popup,
     "apia_popup": collect_apia_popup,
+    "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
+    "tanukikoji_popup": collect_tanukikoji_popup,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
     "manual": collect_manual_events,
