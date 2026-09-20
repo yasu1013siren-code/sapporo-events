@@ -125,6 +125,7 @@ DATA_DIR.mkdir(exist_ok=True)
 DB_PATH = DATA_DIR / "events.db"
 LOG_PATH = BASE_DIR / "collector.log"
 HTML_PATH = DATA_DIR / "index.html"
+UPCOMING_HTML_PATH = DATA_DIR / "upcoming.html"
 
 REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; SapporoChuoCollector/1.0; +personal-use-script)"
@@ -730,7 +731,7 @@ _POPUP_NAV_EXCLUDE_TITLES = {
     "ภาษาไทย", "tax free", "フロア一覧", "レストラン・カフェ", "ショップを探す",
     "ショップからのお知らせ", "パルコからのお知らせ", "parcoメンバーズ",
     "イベント・ポップアップ", "サイトマップ", "お問い合わせ", "アクセス",
-    "営業時間", "フロアガイド", "ニュース一覧", "お知らせ一覧", "店舗一覧",
+    "営業時間", "フロアガイド", "ニュース一覧", "お知らせ一覧", "店舗一覧", "ホーム",
 }
 
 
@@ -741,8 +742,10 @@ def _is_nav_or_utility_link(a) -> bool:
     return title_norm in _POPUP_NAV_EXCLUDE_TITLES
 
 
-def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
-    """札幌PARCO公式「イベント・ポップアップ」ページからPOPUP項目だけを取得。"""
+def collect_sapporo_parco_popup(max_items: int = 60) -> Iterable[EventItem]:
+    """札幌PARCO公式「イベント」ページから、ジャンルを問わずイベント情報全般を取得する。
+    POPUP関連の文言がある項目には引き続き「ポップアップストア」用のタグを付け、
+    それ以外（飲食・音楽ライブ・アニメ等）は通常のclassify()のキーワード判定に任せる。"""
     url = "https://sapporo.parco.jp/event/?page=1"
     soup = fetch(url)
     if soup is None:
@@ -752,10 +755,15 @@ def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
     count = 0
 
     for a in soup.find_all("a", href=True):
-        title = clean(a.get_text(" ", strip=True))
-        if not title:
+        href = a.get("href", "")
+        # イベント詳細ページへのリンクだけを対象にする（ナビゲーション等の除外）
+        if "/event/detail/" not in href:
             continue
         if _is_nav_or_utility_link(a):
+            continue
+
+        title = clean(a.get_text(" ", strip=True))
+        if not title or len(title) < 3:
             continue
 
         block = a
@@ -771,18 +779,15 @@ def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
             if len(block_text) > 500:
                 break
 
-        popup_text = normalize(block_text).lower()
-        if not any(k.lower() in popup_text for k in [
-            "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop"
-        ]):
-            continue
-
-        href = a.get("href", "")
-        if not href or href.startswith("#"):
-            continue
         full_url = href if href.startswith("http") else f"https://sapporo.parco.jp{href}"
         if full_url in seen:
             continue
+
+        popup_text = normalize(block_text).lower()
+        is_popup = any(k.lower() in popup_text for k in [
+            "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop"
+        ])
+        tags = ["ポップアップストア", "POPUP専用ソース"] if is_popup else []
 
         # 一覧のタイトルに日付が混ざる場合を除去
         clean_title = re.sub(
@@ -804,17 +809,17 @@ def collect_sapporo_parco_popup(max_items: int = 40) -> Iterable[EventItem]:
         seen.add(full_url)
         count += 1
         yield EventItem(
-            source="札幌PARCO(ポップアップ)",
+            source="札幌PARCO",
             title=clean_title[:100],
             url=full_url,
             date_text=date_text[:60],
             place="札幌PARCO",
-            tags=["ポップアップストア", "POPUP専用ソース"],
+            tags=tags,
         )
         if count >= max_items:
             break
 
-    log.info(f"札幌PARCO(ポップアップ): {count}件")
+    log.info(f"札幌PARCO(全イベント): {count}件")
 
 
 def collect_stellarplace_popup(max_items: int = 50) -> Iterable[EventItem]:
@@ -1017,6 +1022,8 @@ def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterabl
             href = a.get("href", "")
             if "/news-event/" not in href or href.rstrip("/").endswith("news-event"):
                 continue
+            if _is_nav_or_utility_link(a):
+                continue
             title = clean(a.get_text(" ", strip=True))
             if not title:
                 continue
@@ -1034,31 +1041,31 @@ def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterabl
                 if len(block_text) > 400:
                     break
 
-            normalized = normalize(block_text).lower()
-            if not any(k.lower() in normalized for k in [
-                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
-            ]):
-                continue
-
             full_url = href if href.startswith("http") else f"https://tanukikoji.or.jp{href}"
             if full_url in seen:
                 continue
 
+            normalized = normalize(block_text).lower()
+            is_popup = any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop"
+            ])
+            tags = ["ポップアップストア", "POPUP専用ソース"] if is_popup else []
+
             seen.add(full_url)
             count += 1
             yield EventItem(
-                source="狸小路商店街(ニュース&イベント)",
+                source="狸小路商店街",
                 title=re.sub(r"^\s*【終了しました】\s*", "", title)[:100],
                 url=full_url,
                 date_text=_parse_popup_date_text(block_text)[:60],
                 place="狸小路商店街",
-                tags=["ポップアップストア", "POPUP専用ソース"],
+                tags=tags,
             )
             if count >= max_items:
-                log.info(f"狸小路商店街(ニュース&イベント): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+                log.info(f"狸小路商店街(全イベント): {count}件")
                 return
         time.sleep(REQUEST_INTERVAL_SEC)
-    log.info(f"狸小路商店街(ニュース&イベント): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+    log.info(f"狸小路商店街(全イベント): {count}件")
 
 
 
@@ -1590,6 +1597,20 @@ def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     return kept
 
 
+def split_started_and_upcoming(rows: list, today: date) -> tuple:
+    """開催が「もう始まっている（開始日不明も含む）」ものと「まだ始まっていない」ものに分ける。
+    ページを分けて表示するために使う。"""
+    started, upcoming = [], []
+    for row in rows:
+        date_text = row[2]
+        start, _ = parse_date_range(date_text, today)
+        if start is not None and start > today:
+            upcoming.append(row)
+        else:
+            started.append(row)
+    return started, upcoming
+
+
 def infer_tags_from_source(source: str) -> list:
     """DBには生のtags(カテゴリタグ)は保存していないため、再分類時はsource名から推測する。
     （百貨店の催事情報は情報源そのものが「デパート催事」の証拠になる）"""
@@ -1639,7 +1660,14 @@ def escape_html(text: str) -> str:
     )
 
 
-def build_html(rows, today: str, new_count: int) -> str:
+def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> str:
+    if page_kind == "upcoming":
+        page_title_suffix = "（開始前）"
+        page_switch_link = '<a href="index.html">📍 開催中のイベント一覧はこちら →</a>'
+    else:
+        page_title_suffix = "（開催中）"
+        page_switch_link = '<a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a>'
+
     # カテゴリごとにグループ化
     grouped = {label: [] for label in CATEGORY_ORDER}
     for source, title, date_text, place, fee, cats, url, first_seen, blurb, links_json in rows:
@@ -1730,6 +1758,21 @@ def build_html(rows, today: str, new_count: int) -> str:
   .updated {{
     color: var(--muted);
     font-size: 13px;
+  }}
+  .page-switch {{
+    margin-top: 10px;
+  }}
+  .page-switch a {{
+    display: inline-block;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }}
+  .page-switch a:hover {{
+    border-color: var(--accent2);
   }}
   main {{
     max-width: 980px;
@@ -1828,8 +1871,9 @@ def build_html(rows, today: str, new_count: int) -> str:
 </head>
 <body>
 <header>
-  <h1>🏙️ 札幌市中央区 情報収集レポート</h1>
+  <h1>🏙️ 札幌市中央区 情報収集レポート{page_title_suffix}</h1>
   <div class="updated">最終更新: {today}　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: {new_count}件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="page-switch">{page_switch_link}</div>
 </header>
 <main>
 {sections_html}
@@ -1898,9 +1942,15 @@ def main() -> None:
     rows = fetch_all_current(conn)
     today_date = datetime.now().date()
     rows = filter_within_month(rows, today_date, days=60)  # 公開予定映画等も見えるよう2ヶ月分表示
-    html = build_html(rows, today, len(new_items))
-    HTML_PATH.write_text(html, encoding="utf-8")
-    log.info(f"HTMLレポートを更新しました → {HTML_PATH}")
+    started_rows, upcoming_rows = split_started_and_upcoming(rows, today_date)
+
+    html_started = build_html(started_rows, today, len(new_items), page_kind="started")
+    HTML_PATH.write_text(html_started, encoding="utf-8")
+    log.info(f"HTMLレポート(開催中)を更新しました → {HTML_PATH}")
+
+    html_upcoming = build_html(upcoming_rows, today, len(new_items), page_kind="upcoming")
+    UPCOMING_HTML_PATH.write_text(html_upcoming, encoding="utf-8")
+    log.info(f"HTMLレポート(開始前)を更新しました → {UPCOMING_HTML_PATH}")
 
     conn.close()
 
