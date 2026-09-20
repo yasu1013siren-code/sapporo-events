@@ -1537,9 +1537,9 @@ def fetch_all_current(conn: sqlite3.Connection) -> list:
 # 開催日フィルタ（更新日から1か月分だけを表示）
 # ----------------------------------------------------------------------------
 
-_FULL_DATE_RE = re.compile(r"(\d{4})[年/\-](\d{1,2})[月/\-](\d{1,2})")
-_SHORT_DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
-_SHORT_SLASH_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})/(\d{1,2})(?!\d)")
+_FULL_DATE_RE = re.compile(r"(\d{4})\s*[年/\-]\s*(\d{1,2})\s*[月/\-]\s*(\d{1,2})")
+_SHORT_DATE_RE = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+_SHORT_SLASH_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})\s*/\s*(\d{1,2})(?!\d)")
 
 
 def parse_date_range(date_text: str, today: date):
