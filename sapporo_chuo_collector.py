@@ -1610,12 +1610,15 @@ def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     return kept
 
 
-def split_started_and_upcoming(rows: list, today: date) -> tuple:
-    """開催が「もう始まっている（開始日不明も含む）」ものと「まだ始まっていない」ものに分ける。
-    ページを分けて表示するために使う。
+def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> tuple:
+    """開催が「もう始まっている、または開始まで残り約1週間以内（soon_days日以内）」のものと、
+    「まだそれより先」のものに分ける。ページを分けて表示するために使う。
+    開始が近いイベントを「開始前」ページに埋もれさせず、早めに「開催中」ページ側で
+    目に触れるようにする（開始日ちょうどsoon_days日後までを含み、それより先は開始前ページへ）。
     ただし映画は日付判定が不安定なため、カテゴリそのもので強制的に振り分ける
     （🎬映画=上映中は常に開催中ページへ、🍿公開予定映画は常に開始前ページへ）。"""
     started, upcoming = [], []
+    soon_cutoff = today + timedelta(days=soon_days)
     for row in rows:
         date_text = row[2]
         cats = (row[5] or "").split(",")
@@ -1626,7 +1629,7 @@ def split_started_and_upcoming(rows: list, today: date) -> tuple:
             started.append(row)
             continue
         start, _ = parse_date_range(date_text, today)
-        if start is not None and start > today:
+        if start is not None and start > soon_cutoff:
             upcoming.append(row)
         else:
             started.append(row)
@@ -1716,6 +1719,11 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
         for source, title, date_text, place, fee, url, first_seen, blurb, links_json in items:
             is_new = " new" if first_seen == today else ""
             badge = '<span class="badge">NEW</span>' if first_seen == today else ""
+
+            if page_kind != "upcoming":
+                item_start, _ = parse_date_range(date_text, today_date)
+                if item_start is not None and item_start > today_date:
+                    badge += '<span class="badge badge-soon">まもなく開催</span>'
 
             try:
                 links = json.loads(links_json) if links_json else []
@@ -1867,6 +1875,12 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
     border-radius: 999px;
     font-weight: bold;
     letter-spacing: 0.05em;
+  }}
+  .badge-soon {{
+    right: auto;
+    left: 10px;
+    background: var(--accent2);
+    color: #12131a;
   }}
   .card-title {{
     font-size: 14px;
