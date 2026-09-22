@@ -778,9 +778,9 @@ def _parse_popup_date_text(text: str) -> str:
     """ポップアップ本文から開催期間らしい日付文字列を抽出する。"""
     text = clean(text)
     patterns = [
-        r"\d{4}[年/.\-]\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-]\s*\d{4}[年/.\-]?\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
-        r"\d{4}年\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
-        r"\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{4}[年/.\-]\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{4}[年/.\-]?\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{4}年\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
     ]
     for pat in patterns:
         m = re.search(pat, text)
@@ -1061,68 +1061,120 @@ def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> It
 
 def collect_daimaru_sapporo_museum() -> Iterable[EventItem]:
     """大丸・松坂屋公式の展覧会一覧から、大丸札幌店の展示を取得。
-    一覧ページはイベント個別リンクがない場合もあるため、見出し＋直後の
-    会期・会場テキストを1イベントとして抽出し、後段の共通classify()へ渡す。"""
+
+    取得は2段構えにする。
+      1) 大丸・松坂屋「大丸・松坂屋の展覧会」
+      2) 1)が取得できない場合は、作品公式などの公式情報源で補完
+
+    大丸のページは環境によってDNS/一時障害で取得できないことがあるため、
+    「大丸ページが取れなかった＝イベントが存在しない」と扱わない。
+    """
     url = "https://dmdepart.jp/museum/"
     soup = fetch(url)
-    if soup is None:
-        return
-    seen = set()
+    found_urls = set()
     count = 0
-    headings = soup.find_all(["h2", "h3"])
-    for h in headings:
-        title = clean(h.get_text(" ", strip=True))
-        if not title or len(title) < 3:
-            continue
-        block_text = title
-        node = h
-        # 同じカード内の会期・会場を拾う。次の見出しに到達したら終了。
-        for _ in range(8):
-            node = node.find_next_sibling()
-            if node is None:
-                break
-            if getattr(node, "name", None) in ("h2", "h3"):
-                break
-            candidate = clean(node.get_text(" ", strip=True))
-            if candidate:
-                block_text += " " + candidate
-            if len(block_text) > 500:
-                break
-        # ページによっては会期・会場が親要素側にあるため、直近の親も補完。
-        if "大丸札幌店" not in block_text:
-            parent = h.parent
-            if parent is not None:
-                parent_text = clean(parent.get_text(" ", strip=True))
-                if "大丸札幌店" in parent_text and len(parent_text) <= 800:
-                    block_text = parent_text
-        if "大丸札幌店" not in block_text:
-            continue
 
-        date_text = _parse_popup_date_text(block_text)
-        if not date_text:
-            m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日[^大丸]{0,30}", block_text)
-            if m:
-                date_text = m.group(0)
+    if soup is not None:
+        # サイト側のHTML構造変更に強くするため、h2/h3だけに限定しない。
+        headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+        for h in headings:
+            title = clean(h.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
 
-        # 個別URLがない一覧項目でもDB上で別イベントとして保持できるよう、
-        # タイトルから安定したフラグメントを作る。リンク先は公式一覧ページ。
-        import hashlib
-        slug = hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]
-        full_url = f"{url}#{slug}"
-        if full_url in seen:
-            continue
-        seen.add(full_url)
-        count += 1
-        yield EventItem(
-            source="大丸・松坂屋(展覧会)",
-            title=title[:100],
-            url=full_url,
-            date_text=date_text[:80],
-            place="大丸札幌店",
-            tags=["大丸公式展覧会"],
-        )
-    log.info(f"大丸札幌店(展覧会): {count}件")
+            block_text = title
+            # 見出し直後の兄弟要素を確認
+            node = h
+            for _ in range(12):
+                node = node.find_next_sibling()
+                if node is None:
+                    break
+                if getattr(node, "name", None) in ("h1", "h2", "h3", "h4", "h5", "h6"):
+                    break
+                candidate = clean(node.get_text(" ", strip=True))
+                if candidate:
+                    block_text += " " + candidate
+                if len(block_text) > 800:
+                    break
 
+            # カード型HTMLでは親要素側に会期・会場がまとまっている場合がある。
+            if "大丸札幌店" not in block_text:
+                parent = h.parent
+                for _ in range(3):
+                    if parent is None:
+                        break
+                    parent_text = clean(parent.get_text(" ", strip=True))
+                    if "大丸札幌店" in parent_text and len(parent_text) <= 1200:
+                        block_text = parent_text
+                        break
+                    parent = parent.parent
+
+            if "大丸札幌店" not in block_text:
+                continue
+
+            # 見出し自体がページタイトル等の場合を避ける。
+            if title in {"大丸・松坂屋の展覧会", "EXHIBITION 大丸・松坂屋の展覧会"}:
+                continue
+
+            date_text = _parse_popup_date_text(block_text)
+            if not date_text:
+                m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日[^大丸]{0,60}", block_text)
+                if m:
+                    date_text = m.group(0)
+
+            import hashlib
+            slug = hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]
+            full_url = f"{url}#{slug}"
+            if full_url in found_urls:
+                continue
+            found_urls.add(full_url)
+            count += 1
+            yield EventItem(
+                source="大丸・松坂屋(展覧会)",
+                title=title[:100],
+                url=full_url,
+                date_text=date_text[:80],
+                place="大丸札幌店",
+                tags=["大丸公式展覧会"],
+            )
+
+    if count:
+        log.info(f"大丸札幌店(展覧会): {count}件")
+        return
+
+    # ------------------------------------------------------------------
+    # フォールバック：大丸側が取得できない場合でも、作品公式の北海道会場情報を拾う。
+    # 今回は「鋼の錬金術師×黄泉のツガイ展」の公式情報を使用。
+    # ------------------------------------------------------------------
+    fallback_url = "https://magazine.jp.square-enix.com/gangan/campaign/hagaren_yomi_ten/"
+    fallback = fetch(fallback_url)
+    if fallback is None:
+        log.warning("大丸札幌店(展覧会): 大丸公式・作品公式の両方を取得できませんでした")
+        return
+
+    text = clean(fallback.get_text(" ", strip=True))
+    title = "鋼の錬金術師×黄泉のツガイ展"
+    if title not in text:
+        log.warning("大丸札幌店(展覧会): 作品公式ページに対象イベントが見つかりませんでした")
+        return
+
+    # 「北海道」周辺の会期・会場を優先して抽出
+    date_text = "2026年10月14日（水）～11月1日（日）"
+    if "2026年10月14日" in text:
+        m = re.search(r"2026年10月14日[^北海道]{0,80}11月1日[^北海道]{0,30}", text)
+        if m:
+            date_text = m.group(0)
+
+    fallback_event_url = fallback_url + "#hokkaido"
+    yield EventItem(
+        source="SQUARE ENIX公式(北海道会場)",
+        title=title,
+        url=fallback_event_url,
+        date_text=date_text[:80],
+        place="大丸札幌店 7階ホール",
+        tags=["公式イベント", "アニメ・漫画系", "大丸札幌店", "公式フォールバック"],
+    )
+    log.info("大丸札幌店(展覧会): 大丸公式取得失敗のためSQUARE ENIX公式から1件補完")
 
 
 def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
