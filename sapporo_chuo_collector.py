@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 r"""
-sapporo_chuo_collector(12).py
+sapporo_chuo_collector_ver12.4.py
 ==========================
-札幌市中央区の「飲食・アニメ・漫画・ゲーム・ポップアップ・音楽ライブ・映画」情報を毎日自動収集するツール。
+札幌市中央区の「飲食・アニメ・ポップアップ・音楽ライブ・映画」情報を毎日自動収集するツール。
 
 【できること】
-  - 複数の情報サイト＋商業施設公式サイト＋アニメ/漫画/ゲーム公式サイトを巡回し、イベント/ライブ/ポップアップ情報を取得
+  - 複数の情報サイト＋商業施設公式サイトを巡回し、イベント/ライブ/ポップアップ情報を取得
   - 飲食・アニメ・音楽ライブに関係する情報だけに自動で絞り込み
   - 環境変数 GEMINI_API_KEY を設定していれば、Gemini AI(無料枠)がキーワードだけ
     では判断しづらいケースも判定し、SNS/ブログにそのまま使える紹介文も生成する
@@ -13,8 +13,6 @@ sapporo_chuo_collector(12).py
   - これまでに集めた情報を SQLite DB に蓄積し、重複を自動で排除（URL単位）
   - 実行するたびに data/index.html を更新 → ブラウザで見やすく確認できる
   - 通知（メール/LINE/Slack等）は一切送信しない。ファイル更新のみ。
-  - 【Ver.12】出版社/制作会社/作品系の公式イベント一覧を逆引きし、札幌会場の原画展・展覧会・POPUP等を追加取得。
-  - 公開日（published_date）と開催日（date_text）を完全分離し、公開日だけのページは開催イベントとして扱わない。
 
 【対象サイト（初期設定）】
   1. サツイベ（札幌イベント情報マガジン）中央区ページ　※中央区限定
@@ -168,6 +166,13 @@ CATEGORY_INCLUDE = {
         "期間限定ショップ", "期間限定店", "期間限定ストア",
         "POP UP SHOP", "POPUP SHOP", "POP UP STORE", "POPUP STORE",
     ],
+    # アニメ・漫画・ゲーム系のPOPUPは、通常のポップアップストアと
+    # 別枠でも確認できるようにする（同じイベントを両方へ表示）。
+    "🎮 アニメ・ゲーム関連ポップアップストア": [
+        "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
+        "期間限定ショップ", "期間限定店", "期間限定ストア",
+        "POP UP SHOP", "POPUP SHOP", "POP UP STORE", "POPUP STORE",
+    ],
     "🎵 音楽ライブ": [
         "きたえーる", "hitaru", "Zepp Sapporo", "札幌ドーム", "真駒内セキスイハイムアイスアリーナ",
         "全国ツアー", "アリーナツアー", "ドームツアー", "JAPAN TOUR", "TOUR", "ワンマン",
@@ -182,6 +187,7 @@ CATEGORY_EXCLUDE = {
                                        # INCLUDE側に一致しない設計）
     "🖼️ 展示会": ["声優イベント", "アニメライブ"],
     "🛍️ ポップアップストア": [],
+    "🎮 アニメ・ゲーム関連ポップアップストア": [],
     "🎵 音楽ライブ": [
         "オーケストラ", "クラシック", "交響楽団", "交響曲", "室内楽", "オペラ", "バレエ",
         "吹奏楽", "合唱", "アンサンブル", "フィルハーモニー",
@@ -343,6 +349,22 @@ def fetch(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
         try:
             resp = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
+            # HTML / XML(RSS・Atom・サイトマップ等)を自動判別
+            content_type = (resp.headers.get("Content-Type") or "").lower()
+            sample = resp.content.lstrip()[:500].lower()
+            is_xml = (
+                "xml" in content_type
+                or url.lower().split("?")[0].endswith((".xml", ".rss", ".atom"))
+                or sample.startswith(b"<?xml")
+                or sample.startswith(b"<rss")
+                or sample.startswith(b"<feed")
+                or sample.startswith(b"<urlset")
+                or sample.startswith(b"<sitemapindex")
+            )
+            if is_xml:
+                # XMLはXMLパーサーで処理し、XMLParsedAsHTMLWarningを防止
+                return BeautifulSoup(resp.content, "xml")
+
             resp.encoding = resp.apparent_encoding or resp.encoding
             return BeautifulSoup(resp.text, "lxml")
         except Exception as e:
@@ -501,6 +523,212 @@ def _official_link_is_candidate(a, block_text: str) -> bool:
     return any(normalize(h).lower() in hay for h in OFFICIAL_EVENT_LINK_HINTS)
 
 
+
+# ----------------------------------------------------------------------------
+# Ver.12.2: 作品・展覧会「専用公式サイト」の自動発見
+# ----------------------------------------------------------------------------
+# 出版社/制作会社の公式ページからイベント詳細へ進んだ後、
+# 「公式サイト」「Official」「特設サイト」等の外部リンクを辿る。
+# これにより、毎回新しい「○○原画展公式」「○○展公式」をSOURCESへ手作業追加せず、
+# 作品単位の専用サイトを発見できる。
+OFFICIAL_SITE_LINK_HINTS = [
+    "公式サイト", "公式ページ", "特設サイト", "公式ホームページ", "official site",
+    "official website", "official", "特設ページ", "展覧会公式", "原画展公式",
+    "event site", "event website", "イベント公式",
+]
+
+OFFICIAL_SITE_TITLE_HINTS = [
+    "原画展", "展覧会", "展示会", "企画展", "特別展", "作品展", "資料展",
+    "複製原画", "アート展", "記念展", "周年展", "museum", "exhibition",
+    "popup", "pop-up", "ポップアップ", "期間限定ショップ", "イベント",
+]
+
+# 公式サイトとして許可する外部ドメインの傾向。SNS/検索/通販サイト等は除外する。
+OFFICIAL_SITE_BLOCKED_DOMAINS = {
+    "twitter.com", "x.com", "instagram.com", "facebook.com", "tiktok.com",
+    "youtube.com", "youtu.be", "amazon.co.jp", "rakuten.co.jp", "mercari.com",
+    "line.me", "t.co", "google.com", "maps.google.com",
+}
+
+
+def _domain_of(url: str) -> str:
+    from urllib.parse import urlparse
+    return (urlparse(url).netloc or "").lower().split(":")[0].removeprefix("www.")
+
+
+def _is_probable_official_site_url(url: str, parent_domain: str = "") -> bool:
+    """イベント詳細から見つけたリンクが「作品/展覧会専用公式サイト」らしいか判定。"""
+    d = _domain_of(url)
+    if not d or d in OFFICIAL_SITE_BLOCKED_DOMAINS:
+        return False
+    # 出版社・制作会社自身のドメインは専用サイトではない場合が多いので、
+    # ここでは「外部ドメイン」を優先。ただし同一ドメイン内の /event/ 等も許可する。
+    if d == parent_domain:
+        path = url.lower()
+        return any(k in path for k in ["event", "exhibition", "museum", "gengaten", "popup", "special", "campaign"])
+    # 汎用SNS/通販以外のドメインを候補にする。
+    return True
+
+
+def _discover_official_site_links(detail: BeautifulSoup, parent_url: str) -> list[tuple[str, str]]:
+    """イベント詳細ページから、専用公式サイト候補URLを抽出する。
+    戻り値: [(url, 根拠ラベル), ...]
+    """
+    if detail is None:
+        return []
+    parent_domain = _domain_of(parent_url)
+    found = []
+    seen = set()
+    for a in detail.find_all("a", href=True):
+        href = _absolute_url(parent_url, a.get("href"))
+        if not href.startswith("http"):
+            continue
+        label = clean(a.get_text(" ", strip=True))
+        parent = a.parent.get_text(" ", strip=True) if a.parent else ""
+        context = normalize(f"{label} {parent}").lower()
+        score = 0
+        if any(normalize(h).lower() in context for h in OFFICIAL_SITE_LINK_HINTS):
+            score += 20
+        # リンク先URLそのものが公式イベントサイトらしい場合も候補にする。
+        if any(normalize(h).lower() in href.lower() for h in OFFICIAL_SITE_TITLE_HINTS):
+            score += 8
+        if not score or not _is_probable_official_site_url(href, parent_domain):
+            continue
+        if href in seen:
+            continue
+        seen.add(href)
+        found.append((score, href, label or "公式サイトリンク"))
+    found.sort(key=lambda x: x[0], reverse=True)
+    return [(u, label) for _score, u, label in found[:8]]
+
+
+def _extract_official_site_event(detail: BeautifulSoup, source_name: str, site_url: str, parent_title: str = "") -> Optional[EventItem]:
+    """専用公式サイト1ページから札幌開催イベントを1件抽出する。"""
+    if detail is None:
+        return None
+    full_text = clean(" ".join(detail.stripped_strings))
+    if not full_text:
+        return None
+
+    # 札幌/北海道会場が明記されていることを必須にする。
+    if "札幌" not in full_text and not re.search(r"北海道.{0,160}(?:札幌|大丸|PARCO|パルコ|ステラ|ファクトリー|アニメイト)", full_text):
+        return None
+
+    date_text = _extract_event_period_from_soup(detail)
+    if not date_text:
+        # ラベル構造が特殊な専用サイト向けのフォールバック。
+        date_text = _parse_popup_date_text(full_text)
+    if not date_text:
+        # 公開日しかないページは絶対に採用しない。
+        return None
+
+    place = _extract_event_place_from_soup(detail)
+    if not place:
+        m = re.search(r"(?:大丸札幌店|札幌PARCO|札幌パルコ|札幌ステラプレイス|サッポロファクトリー|アニメイト札幌|三省堂書店\s*札幌店|札幌芸術の森)[^。\n]{0,80}", full_text)
+        place = clean(m.group(0)) if m else ""
+    if not place or not is_sapporo_venue(place + " " + full_text):
+        return None
+
+    title = ""
+    for selector in ["h1", "main h1", ".page-title", ".entry-title", "title"]:
+        node = detail.select_one(selector)
+        if node:
+            title = clean(node.get_text(" ", strip=True))
+            if title:
+                break
+    if not title:
+        title = parent_title
+    title = re.sub(r"\s*\|.*$", "", title).strip()
+    if len(title) < 3:
+        return None
+
+    published_date = _extract_published_date_from_soup(detail)
+    tags = ["作品・展覧会専用公式", "公式イベント", "公式逆引き収集"]
+    blob = normalize(f"{title} {full_text[:6000]}").lower()
+    if any(normalize(h).lower() in blob for h in OFFICIAL_MEDIA_HINTS):
+        tags.append("メディア系公式")
+    if any(normalize(h).lower() in blob for h in ["原画展", "展覧会", "展示会", "企画展", "特別展", "複製原画", "作品展"]):
+        tags.append("原画展・展示会公式")
+    if any(normalize(h).lower() in blob for h in ["popup", "pop-up", "ポップアップ", "期間限定ショップ"]):
+        tags.append("POPUP公式")
+
+    return EventItem(
+        source=f"専用公式サイト逆引き: {source_name}",
+        title=title[:120],
+        url=site_url,
+        date_text=date_text[:80],
+        published_date=published_date[:30],
+        place=place[:160],
+        tags=tags,
+    )
+
+
+def collect_discovered_official_sites(max_detail_sites: int = 40, max_discovered_sites: int = 30) -> Iterable[EventItem]:
+    """出版社/制作会社の公式イベント詳細ページから「専用公式サイト」を自動発見して巡回する。"""
+    discovered = []
+    seen_sites = set()
+
+    # まず既存の公式逆引き情報源から、札幌/展覧会候補の詳細URLを集める。
+    for source_cfg in OFFICIAL_REVERSE_SOURCES:
+        soup = fetch(source_cfg["url"])
+        if soup is None:
+            continue
+        candidates = []
+        for a in soup.find_all("a", href=True):
+            title = clean(a.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
+            block = a
+            block_text = title
+            for _ in range(3):
+                if block.parent is None:
+                    break
+                block = block.parent
+                txt = clean(block.get_text(" ", strip=True))
+                if len(txt) > len(block_text):
+                    block_text = txt
+                if len(block_text) > 600:
+                    break
+            if not _official_link_is_candidate(a, block_text):
+                continue
+            full_url = _absolute_url(source_cfg["url"], a.get("href"))
+            if source_cfg["domain"] not in full_url:
+                continue
+            score = (20 if "札幌" in block_text or "北海道" in block_text else 0)
+            score += 10 if any(normalize(h).lower() in normalize(title).lower() for h in OFFICIAL_SITE_TITLE_HINTS) else 0
+            candidates.append((score, full_url, title))
+        unique = {}
+        for score, url, title in sorted(candidates, reverse=True):
+            unique.setdefault(url, (score, title))
+        for url, (_score, title) in list(unique.items())[:max_detail_sites]:
+            detail = fetch(url)
+            if detail is None:
+                continue
+            for site_url, reason in _discover_official_site_links(detail, url):
+                d = _domain_of(site_url)
+                if d in seen_sites:
+                    continue
+                seen_sites.add(d)
+                discovered.append((source_cfg["name"], site_url, title, reason))
+                if len(discovered) >= max_discovered_sites:
+                    break
+            if len(discovered) >= max_discovered_sites:
+                break
+        if len(discovered) >= max_discovered_sites:
+            break
+
+    log.info(f"専用公式サイト自動発見: {len(discovered)}サイト")
+
+    for source_name, site_url, parent_title, reason in discovered:
+        site = fetch(site_url)
+        if site is None:
+            continue
+        item = _extract_official_site_event(site, source_name, site_url, parent_title)
+        if item:
+            item.tags.append(f"発見根拠:{reason}")
+            yield item
+
+
 def collect_official_anime_manga_game(max_links_per_source: int = 25) -> Iterable[EventItem]:
     """Ver.12: 作品/出版社/制作会社の公式サイトから札幌開催イベントを逆引きする。
 
@@ -641,6 +869,10 @@ def classify(item: EventItem) -> list:
             and any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
         )
         if forced_popup or any(normalize(inc).lower() in haystack_lower for inc in includes):
+            # アニメ・ゲーム関連POPUPは、単なる「POP UP」という語だけでは入れず、
+            # 下の共通メディア判定でアニメ/ゲーム関連であることを確認してから追加する。
+            if label == "🎮 アニメ・ゲーム関連ポップアップストア":
+                continue
             excludes = CATEGORY_EXCLUDE.get(label, [])
             if any(exc in haystack for exc in excludes):
                 continue
@@ -655,6 +887,21 @@ def classify(item: EventItem) -> list:
         "キャラクター", "キャラ", "原作", "原画", "複製原画", "設定資料", "アートワーク",
         "作品展", "アニメ化", "コミックス", "単行本", "少年漫画", "青年漫画",
     ]
+    # 作品名そのものに「アニメ/ゲーム」という語が入らないPOPUPを拾うための
+    # 代表的なIP/ブランド名。必要に応じて追加できる。
+    media_ip_hints = [
+        "ちいかわ", "呪術廻戦", "鬼滅の刃", "ONE PIECE", "ワンピース", "ハイキュー",
+        "ブルーロック", "僕のヒーローアカデミア", "ヒロアカ", "チェンソーマン", "進撃の巨人",
+        "銀魂", "NARUTO", "ナルト", "BLEACH", "ブリーチ", "名探偵コナン", "ガンダム",
+        "ポケモン", "Pokémon", "原神", "崩壊：スターレイル", "崩壊スターレイル", "Fate",
+        "ウマ娘", "あんさんぶるスターズ", "あんスタ", "ヒプノシスマイク", "初音ミク",
+        "サンリオ", "すみっコぐらし", "ドラえもん", "クレヨンしんちゃん", "プリキュア",
+        "ちびまる子ちゃん", "名探偵コナン", "鋼の錬金術師", "黄泉のツガイ", "SPY×FAMILY",
+        "スパイファミリー", "薬屋のひとりごと", "推しの子", "東京リベンジャーズ",
+        "カービィ", "ゼルダの伝説", "スプラトゥーン", "マリオ", "どうぶつの森",
+        "ファイナルファンタジー", "FINAL FANTASY", "ドラゴンクエスト", "ペルソナ",
+        "モンスターハンター", "ストリートファイター", "原神", "アークナイツ", "ブルアカ",
+    ]
     exhibition_hints = [
         "展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展",
         "資料展", "作品展", "展",
@@ -664,14 +911,27 @@ def classify(item: EventItem) -> list:
     ]
     media_text = normalize(f"{item.title} {item.place} {item.source} {' '.join(item.tags)}").lower()
     has_media = any(h.lower() in media_text for h in media_hints) or any(
+        h.lower() in media_text for h in media_ip_hints
+    ) or any(
         marker in media_text for marker in ["公式逆引き", "アニメ・漫画・ゲーム公式", "メディア系公式"]
     )
     if has_media and any(h.lower() in media_text for h in exhibition_hints):
         if "🖼️ 展示会" not in matched:
             matched.append("🖼️ 展示会")
-    if has_media and any(h.lower() in media_text for h in popup_hints):
+    has_popup = any(h.lower() in media_text for h in popup_hints) or "ポップアップストア" in item.tags
+
+    # 「アニメ・ゲーム関連POPUP」は、タイトルだけでなく情報源/タグも判定材料にする。
+    # これにより作品名に「アニメ」「ゲーム」が入っていない
+    # （例: 作品名だけのPOPUP）ケースでも、公式逆引きやアニメ専用情報源から拾える。
+    media_source = any(marker in media_text for marker in [
+        "アニメ・漫画・ゲーム公式", "アニメ・漫画系", "ウォーカープラス(アニメ)",
+        "作品・展覧会専用公式", "メディア系公式", "popup公式",
+    ])
+    if has_popup and (has_media or media_source):
         if "🛍️ ポップアップストア" not in matched:
             matched.append("🛍️ ポップアップストア")
+        if "🎮 アニメ・ゲーム関連ポップアップストア" not in matched:
+            matched.append("🎮 アニメ・ゲーム関連ポップアップストア")
     return list(dict.fromkeys(matched))
 
 
@@ -1819,6 +2079,7 @@ SOURCES = {
     "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
     "tanukikoji_popup": collect_tanukikoji_popup,
     "official_anime_manga_game_reverse": collect_official_anime_manga_game,
+    "official_dedicated_site_discovery": collect_discovered_official_sites,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
     "manual": collect_manual_events,
@@ -2045,6 +2306,10 @@ def infer_tags_from_source(source: str) -> list:
         tags.append("デパート催事")
     if source and "公式逆引き" in source:
         tags.extend(["アニメ・漫画・ゲーム公式", "公式イベント", "公式逆引き収集"])
+    if source and ("アニメ" in source or "ゲーム" in source):
+        tags.append("アニメ・漫画系")
+    if source and ("ポップアップ" in source or "POPUP" in source.upper() or "POP-UP" in source.upper()):
+        tags.extend(["ポップアップストア", "POPUP専用ソース"])
     return list(dict.fromkeys(tags))
 
 
