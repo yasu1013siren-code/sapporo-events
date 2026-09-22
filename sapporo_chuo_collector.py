@@ -394,7 +394,30 @@ def classify(item: EventItem) -> list:
             matched.append(label)
     if "デパート催事" in item.tags:
         matched.append(DEPARTMENT_CATEGORY)
-    return matched
+
+    # アニメ・ゲーム・漫画の展示/P0PUPは情報源によって表記揺れが大きいため、
+    # 情報源をまたいだ共通ルールで補完する。
+    media_hints = [
+        "アニメ", "anime", "漫画", "マンガ", "コミック", "comic", "ゲーム", "game",
+        "キャラクター", "キャラ", "原作", "原画", "複製原画", "設定資料", "アートワーク",
+        "作品展", "アニメ化", "コミックス", "単行本", "少年漫画", "青年漫画",
+    ]
+    exhibition_hints = [
+        "展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展",
+        "資料展", "作品展", "展",
+    ]
+    popup_hints = [
+        "popup", "pop-up", "ポップアップ", "期間限定", "limited shop", "limited store",
+    ]
+    media_text = normalize(f"{item.title} {item.place} {' '.join(item.tags)}").lower()
+    has_media = any(h.lower() in media_text for h in media_hints)
+    if has_media and any(h.lower() in media_text for h in exhibition_hints):
+        if "🖼️ 展示会" not in matched:
+            matched.append("🖼️ 展示会")
+    if has_media and any(h.lower() in media_text for h in popup_hints):
+        if "🛍️ ポップアップストア" not in matched:
+            matched.append("🛍️ ポップアップストア")
+    return list(dict.fromkeys(matched))
 
 
 # ----------------------------------------------------------------------------
@@ -1030,6 +1053,51 @@ def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
     log.info(f"アピア(ポップアップ): {count}件")
 
 
+def collect_daimaru_sapporo_museum() -> Iterable[EventItem]:
+    """大丸・松坂屋公式「展覧会」から札幌会場の展示会を取得。
+    記事公開日ではなく、ページ上の「会期」をdate_textへ入れる。
+    大丸公式が取得できない場合はSQUARE ENIX公式の北海道会場をフォールバックにする。"""
+    official_url = "https://dmdepart.jp/museum/"
+    target_title = "鋼の錬金術師×黄泉のツガイ展"
+
+    soup = fetch(official_url)
+    if soup is not None:
+        page_text = clean(" ".join(soup.stripped_strings))
+        if target_title in page_text and "大丸札幌店" in page_text:
+            idx = page_text.find(target_title)
+            block = page_text[idx:idx + 700]
+            date_text = _parse_popup_date_text(block)
+            if date_text:
+                yield EventItem(
+                    source="大丸・松坂屋公式(展覧会)",
+                    title=target_title,
+                    url=official_url,
+                    date_text=date_text[:60],
+                    place="大丸札幌店 7階ホール",
+                    tags=["アニメ・漫画系", "大丸札幌店", "公式イベント"],
+                )
+                log.info("大丸札幌店(展覧会): 鋼の錬金術師×黄泉のツガイ展を取得")
+                return
+
+    fallback_url = "https://magazine.jp.square-enix.com/gangan/campaign/hagaren_yomi_ten/"
+    soup2 = fetch(fallback_url)
+    if soup2 is not None:
+        text = clean(" ".join(soup2.stripped_strings))
+        if target_title in text and "2026年10月14日" in text and "11月1日" in text and "大丸札幌店" in text:
+            yield EventItem(
+                source="SQUARE ENIX公式(北海道会場)",
+                title=target_title,
+                url=fallback_url,
+                date_text="2026年10月14日（水）～11月1日（日）",
+                place="大丸札幌店 7階ホール",
+                tags=["アニメ・漫画系", "大丸札幌店", "公式イベント"],
+            )
+            log.info("大丸札幌店(展覧会): SQUARE ENIX公式フォールバックで取得")
+            return
+
+    log.warning("大丸札幌店(展覧会): 大丸公式・SQUARE ENIX公式の両方から対象展覧会を取得できませんでした")
+
+
 def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
     """大丸札幌店公式SHOP BLOG（テナント各店のお知らせ記事一覧）からアニメ・ゲーム・
     漫画関連のPOPUP/期間限定ショップ/コラボカフェ等だけを取得する。
@@ -1492,6 +1560,7 @@ SOURCES = {
     "sapporo_parco_popup": collect_sapporo_parco_popup,
     "stellarplace_popup": collect_stellarplace_popup,
     "apia_popup": collect_apia_popup,
+    "daimaru_sapporo_museum": collect_daimaru_sapporo_museum,
     "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
     "tanukikoji_popup": collect_tanukikoji_popup,
     "movie_theaters": collect_movie_theaters,
