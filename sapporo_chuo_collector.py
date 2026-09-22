@@ -155,7 +155,7 @@ CATEGORY_INCLUDE = {
         "アニメ展示会", "アニメ原画展", "原画展", "複製原画展", "コラボカフェ",
         # アニメに限らない、一般的な展示会・企画展
         "展示会", "企画展", "特別展", "写真展", "美術展", "個展", "作品展",
-        "博物館", "美術館", "ギャラリー展", "展覧会", "展",
+        "博物館", "美術館", "ギャラリー展",
     ],
     "🛍️ ポップアップストア": [
         "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
@@ -313,7 +313,8 @@ class EventItem:
     source: str
     title: str
     url: str
-    date_text: str = ""
+    date_text: str = ""  # 開催期間のみ。記事公開日を入れない
+    published_date: str = ""  # 記事・ページの公開日/掲載日（開催判定には一切使用しない）
     place: str = ""
     fee: str = ""
     tags: list = field(default_factory=list)
@@ -373,53 +374,6 @@ def is_sapporo_venue(venue_text: str) -> bool:
     return any(hint in v for hint in SAPPORO_VENUE_HINTS)
 
 
-# アニメ・ゲーム・漫画系イベントを情報源ごとに個別判定せず、全取得データへ
-# 同じルールを適用するための共通語彙。作品名そのものが含まれないイベントでも、
-# 「原画展」「キャラクター」「公式グッズ」「コラボ」等の周辺語から拾えるようにする。
-MEDIA_HINTS = [
-    "アニメ", "anime", "漫画", "マンガ", "コミック", "comic",
-    "ゲーム", "game", "キャラクター", "キャラ", "原作", "公式グッズ",
-    "描き下ろし", "描きおろし", "キービジュアル", "メインビジュアル",
-    "原画", "複製原画", "設定資料", "アートワーク", "作品展",
-    "アニメ化", "コミックス", "単行本", "少年漫画", "青年漫画",
-]
-
-MEDIA_EVENT_HINTS = [
-    "展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展",
-    "資料展", "作品展", "展", "popup", "pop-up", "ポップアップ",
-    "期間限定", "limited shop", "limited store", "shop", "store",
-    "コラボ", "コラボレーション", "コラボカフェ", "フェア", "物販", "グッズ",
-]
-
-
-def is_anime_game_manga_event(item: EventItem, haystack: str = "") -> bool:
-    """全情報源共通のアニメ・ゲーム・漫画系 展示/POPUP候補判定。
-    情報源名だけに依存せず、タイトル・会場・タグを横断して判定する。"""
-    text = normalize(haystack or f"{item.title} {item.place} {' '.join(item.tags)}").lower()
-    media = any(normalize(k).lower() in text for k in MEDIA_HINTS)
-    event = any(normalize(k).lower() in text for k in MEDIA_EVENT_HINTS)
-    source_hint = any(k in normalize(item.source).lower() for k in [
-        "アニメ", "ゲーム", "漫画", "anime", "walkerplus", "popup"
-    ])
-    return event and (media or source_hint)
-
-
-def classify_media_event(item: EventItem, haystack: str) -> list:
-    """アニメ・ゲーム・漫画系の展示/POPUPを共通分類する補助処理。
-    POPUP語があればポップアップ、展示系語があれば展示会へ振り分ける。"""
-    text = normalize(haystack).lower()
-    if not is_anime_game_manga_event(item, haystack):
-        return []
-    result = []
-    popup = any(k in text for k in ["popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "limited store"])
-    exhibition = any(k in text for k in ["展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展", "資料展", "作品展", "展"])
-    if popup:
-        result.append("🛍️ ポップアップストア")
-    if exhibition:
-        result.append("🖼️ 展示会")
-    return result
-
-
 def classify(item: EventItem) -> list:
     """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ/ポップアップ のどれに該当するか判定
     （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
@@ -438,13 +392,6 @@ def classify(item: EventItem) -> list:
             if any(exc in haystack for exc in excludes):
                 continue
             matched.append(label)
-
-    # ★共通処理：アニメ/ゲーム/漫画の展示・POPUPは情報源ごとの判定に依存しない。
-    # 既に通常分類で拾えていても重複させず、作品系のイベントだけを補完する。
-    for media_cat in classify_media_event(item, haystack):
-        if media_cat not in matched:
-            matched.append(media_cat)
-
     if "デパート催事" in item.tags:
         matched.append(DEPARTMENT_CATEGORY)
     return matched
@@ -774,13 +721,68 @@ def collect_sapporo_factory() -> Iterable[EventItem]:
 
 
 
+def _extract_published_date_from_text(text: str) -> str:
+    """記事本文・一覧カードなどから公開日/掲載日らしき日付を抽出する。
+    これは公開日として保存するだけで、開催日(date_text)には絶対に使用しない。"""
+    text = clean(text)
+    patterns = [
+        r"(?:公開日|掲載日|投稿日|投稿日時|更新日|公開|掲載)\s*[:：]?\s*(\d{4}[./\-]\d{1,2}[./\-]\d{1,2})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _extract_event_period_from_text(text: str) -> str:
+    """本文から「会期/イベント期間/開催期間」等に続く開催期間だけを抽出する。
+    公開日が本文の先頭にあっても、それを開催日として採用しない。"""
+    text = clean(text)
+    date_part = r"(?:\d{4}[./\-]\d{1,2}[./\-]\d{1,2}|\d{4}年\d{1,2}月\d{1,2}日?|\d{1,2}月\d{1,2}日?|\d{1,2}/\d{1,2})(?:\s*[（(][^）)]*[）)])?"
+    range_sep = r"[～〜~\-→➝➜]"
+    range_re = rf"{date_part}(?:\s*{range_sep}\s*(?:{date_part}))?"
+    patterns = [
+        rf"(?:イベント期間|イベント期間\s*|会期|開催期間|開催日程|開催日時|開催日)\s*[:：]?\s*({range_re})",
+        rf"(?:期間)\s*[:：]\s*({range_re})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text, flags=re.I)
+        if m:
+            return m.group(1).strip()
+    return ""
+
+
+def _extract_event_period_from_soup(soup: BeautifulSoup) -> str:
+    """詳細ページのラベル付き開催期間を最優先で取得する。"""
+    if soup is None:
+        return ""
+    # まず「イベント期間」「会期」などのラベル周辺だけを見る。
+    for label in ["イベント期間", "会期", "開催期間", "開催日程", "開催日時", "開催日"]:
+        node = soup.find(string=re.compile(rf"^\s*{re.escape(label)}\s*$"))
+        if node:
+            parent = node.parent
+            block = clean(parent.get_text(" ", strip=True)) if parent else ""
+            result = _extract_event_period_from_text(f"{label} {block}")
+            if result:
+                return result
+            # ラベルと値が別要素の場合は次の兄弟/親ブロックも確認。
+            if parent:
+                for sib in list(parent.next_siblings)[:3]:
+                    txt = clean(getattr(sib, "get_text", lambda *a, **k: str(sib))(" ", strip=True))
+                    result = _extract_event_period_from_text(f"{label} {txt}")
+                    if result:
+                        return result
+    return _extract_event_period_from_text(clean(" ".join(soup.stripped_strings)))
+
+
 def _parse_popup_date_text(text: str) -> str:
     """ポップアップ本文から開催期間らしい日付文字列を抽出する。"""
     text = clean(text)
     patterns = [
-        r"\d{4}[年/.\-]\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{4}[年/.\-]?\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
-        r"\d{4}年\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
-        r"\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{4}[年/.\-]\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{4}[年/.\-]?\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{4}年\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
     ]
     for pat in patterns:
         m = re.search(pat, text)
@@ -866,12 +868,15 @@ def collect_sapporo_parco_popup(max_items: int = 60) -> Iterable[EventItem]:
         if len(clean_title) < 3:
             clean_title = title
 
-        date_text = _parse_popup_date_text(block_text)
+        # 「公開日」ではなく、詳細ページの「イベント期間」を開催日として最優先取得。
+        # PARCO一覧には開催日が直接載っているため、それもフォールバックとして使用する。
+        detail = fetch(full_url)
+        published_date = _extract_published_date_from_text(block_text)
+        date_text = _extract_event_period_from_soup(detail) if detail is not None else ""
         if not date_text:
-            # detailページの取得は負荷を抑えるため、日付が一覧にない場合のみ実施
-            detail = fetch(full_url)
-            if detail is not None:
-                date_text = _parse_popup_date_text(clean(" ".join(detail.stripped_strings)))
+            date_text = _parse_popup_date_text(block_text)
+        if detail is not None and not published_date:
+            published_date = _extract_published_date_from_text(clean(" ".join(detail.stripped_strings)))
 
         seen.add(full_url)
         count += 1
@@ -880,6 +885,7 @@ def collect_sapporo_parco_popup(max_items: int = 60) -> Iterable[EventItem]:
             title=clean_title[:100],
             url=full_url,
             date_text=date_text[:60],
+            published_date=published_date[:30],
             place="札幌PARCO",
             tags=tags,
         )
@@ -924,6 +930,11 @@ def collect_stellarplace_popup(max_items: int = 50) -> Iterable[EventItem]:
                     break
 
             normalized = normalize(block_text).lower()
+            if not any(k in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
+            ]):
+                continue
+
             href = a.get("href", "")
             if not href or href.startswith("#"):
                 continue
@@ -991,6 +1002,10 @@ def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
                 break
 
         normalized = normalize(block_text).lower()
+        if not any(k in normalized for k in [
+            "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
+        ]):
+            continue
 
         href = a.get("href", "")
         if not href or href.startswith("#"):
@@ -1035,20 +1050,28 @@ def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> It
             if not title or len(title) < 3:
                 continue
             normalized = normalize(title).lower()
+            if not any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
+            ]):
+                continue
             full_url = href if href.startswith("http") else f"https://shopblog.dmdepart.jp{href}"
             if full_url in seen:
                 continue
-            date_text = ""
-            m = re.search(r"\d{4}\.\d{1,2}\.\d{1,2}", title)
-            if m:
-                date_text = m.group(0)
+            # SHOP BLOGの先頭日付は「記事公開日」であり、開催日ではない。
+            # 詳細記事から「会期/開催期間/期間限定」等の実開催期間だけを取得する。
+            published_date = _extract_published_date_from_text(title)
+            detail = fetch(full_url)
+            date_text = _extract_event_period_from_soup(detail) if detail is not None else ""
+            if not date_text and detail is not None:
+                date_text = _parse_popup_date_text(clean(" ".join(detail.stripped_strings)))
             seen.add(full_url)
             count += 1
             yield EventItem(
                 source="大丸札幌店(SHOP BLOG)",
                 title=title[:100],
                 url=full_url,
-                date_text=date_text,
+                date_text=date_text[:60],
+                published_date=published_date[:30],
                 place="大丸札幌店",
                 tags=["ポップアップストア", "POPUP専用ソース"],
             )
@@ -1057,124 +1080,6 @@ def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> It
                 return
         time.sleep(REQUEST_INTERVAL_SEC)
     log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
-
-
-def collect_daimaru_sapporo_museum() -> Iterable[EventItem]:
-    """大丸・松坂屋公式の展覧会一覧から、大丸札幌店の展示を取得。
-
-    取得は2段構えにする。
-      1) 大丸・松坂屋「大丸・松坂屋の展覧会」
-      2) 1)が取得できない場合は、作品公式などの公式情報源で補完
-
-    大丸のページは環境によってDNS/一時障害で取得できないことがあるため、
-    「大丸ページが取れなかった＝イベントが存在しない」と扱わない。
-    """
-    url = "https://dmdepart.jp/museum/"
-    soup = fetch(url)
-    found_urls = set()
-    count = 0
-
-    if soup is not None:
-        # サイト側のHTML構造変更に強くするため、h2/h3だけに限定しない。
-        headings = soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
-        for h in headings:
-            title = clean(h.get_text(" ", strip=True))
-            if not title or len(title) < 3:
-                continue
-
-            block_text = title
-            # 見出し直後の兄弟要素を確認
-            node = h
-            for _ in range(12):
-                node = node.find_next_sibling()
-                if node is None:
-                    break
-                if getattr(node, "name", None) in ("h1", "h2", "h3", "h4", "h5", "h6"):
-                    break
-                candidate = clean(node.get_text(" ", strip=True))
-                if candidate:
-                    block_text += " " + candidate
-                if len(block_text) > 800:
-                    break
-
-            # カード型HTMLでは親要素側に会期・会場がまとまっている場合がある。
-            if "大丸札幌店" not in block_text:
-                parent = h.parent
-                for _ in range(3):
-                    if parent is None:
-                        break
-                    parent_text = clean(parent.get_text(" ", strip=True))
-                    if "大丸札幌店" in parent_text and len(parent_text) <= 1200:
-                        block_text = parent_text
-                        break
-                    parent = parent.parent
-
-            if "大丸札幌店" not in block_text:
-                continue
-
-            # 見出し自体がページタイトル等の場合を避ける。
-            if title in {"大丸・松坂屋の展覧会", "EXHIBITION 大丸・松坂屋の展覧会"}:
-                continue
-
-            date_text = _parse_popup_date_text(block_text)
-            if not date_text:
-                m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日[^大丸]{0,60}", block_text)
-                if m:
-                    date_text = m.group(0)
-
-            import hashlib
-            slug = hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]
-            full_url = f"{url}#{slug}"
-            if full_url in found_urls:
-                continue
-            found_urls.add(full_url)
-            count += 1
-            yield EventItem(
-                source="大丸・松坂屋(展覧会)",
-                title=title[:100],
-                url=full_url,
-                date_text=date_text[:80],
-                place="大丸札幌店",
-                tags=["大丸公式展覧会"],
-            )
-
-    if count:
-        log.info(f"大丸札幌店(展覧会): {count}件")
-        return
-
-    # ------------------------------------------------------------------
-    # フォールバック：大丸側が取得できない場合でも、作品公式の北海道会場情報を拾う。
-    # 今回は「鋼の錬金術師×黄泉のツガイ展」の公式情報を使用。
-    # ------------------------------------------------------------------
-    fallback_url = "https://magazine.jp.square-enix.com/gangan/campaign/hagaren_yomi_ten/"
-    fallback = fetch(fallback_url)
-    if fallback is None:
-        log.warning("大丸札幌店(展覧会): 大丸公式・作品公式の両方を取得できませんでした")
-        return
-
-    text = clean(fallback.get_text(" ", strip=True))
-    title = "鋼の錬金術師×黄泉のツガイ展"
-    if title not in text:
-        log.warning("大丸札幌店(展覧会): 作品公式ページに対象イベントが見つかりませんでした")
-        return
-
-    # 「北海道」周辺の会期・会場を優先して抽出
-    date_text = "2026年10月14日（水）～11月1日（日）"
-    if "2026年10月14日" in text:
-        m = re.search(r"2026年10月14日[^北海道]{0,80}11月1日[^北海道]{0,30}", text)
-        if m:
-            date_text = m.group(0)
-
-    fallback_event_url = fallback_url + "#hokkaido"
-    yield EventItem(
-        source="SQUARE ENIX公式(北海道会場)",
-        title=title,
-        url=fallback_event_url,
-        date_text=date_text[:80],
-        place="大丸札幌店 7階ホール",
-        tags=["公式イベント", "アニメ・漫画系", "大丸札幌店", "公式フォールバック"],
-    )
-    log.info("大丸札幌店(展覧会): 大丸公式取得失敗のためSQUARE ENIX公式から1件補完")
 
 
 def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
@@ -1588,7 +1493,6 @@ SOURCES = {
     "stellarplace_popup": collect_stellarplace_popup,
     "apia_popup": collect_apia_popup,
     "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
-    "daimaru_sapporo_museum": collect_daimaru_sapporo_museum,
     "tanukikoji_popup": collect_tanukikoji_popup,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
@@ -1643,6 +1547,12 @@ def init_db(conn: sqlite3.Connection) -> None:
     if "links" not in existing_cols:
         conn.execute("ALTER TABLE events ADD COLUMN links TEXT DEFAULT ''")
         log.info("DBを新バージョン形式にマイグレーションしました（links列を追加）")
+    if "published_date" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN published_date TEXT DEFAULT ''")
+        # 旧版ではSHOP BLOGの「記事公開日」をdate_textに入れていたため、
+        # 旧データは一度クリアして次回収集時に実開催期間を再取得させる。
+        conn.execute("UPDATE events SET published_date = date_text, date_text = '' WHERE source LIKE '%SHOP BLOG%'")
+        log.info("DBを新バージョン形式にマイグレーションしました（published_date列追加＋SHOP BLOG旧日付を開催日から分離）")
     conn.commit()
 
 
@@ -1658,23 +1568,23 @@ def upsert_event(conn: sqlite3.Connection, item: EventItem, today: str) -> bool:
     if row is None:
         conn.execute(
             """
-            INSERT INTO events (url, source, title, date_text, place, fee, categories, blurb, links, first_seen, last_seen)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO events (url, source, title, date_text, published_date, place, fee, categories, blurb, links, first_seen, last_seen)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (item.url, item.source, item.title, item.date_text, item.place, item.fee, cats, item.blurb,
+            (item.url, item.source, item.title, item.date_text, item.published_date, item.place, item.fee, cats, item.blurb,
              links_json, today, today),
         )
         return True
     else:
         # 紹介文(blurb)は新しく判定できた時だけ上書きする（AI無効時に空で消してしまわないため）
         blurb_clause = ", blurb = ?" if item.blurb else ""
-        params = [today, item.title, item.date_text, item.place, item.fee, cats, links_json]
+        params = [today, item.title, item.date_text, item.published_date, item.place, item.fee, cats, links_json]
         if item.blurb:
             params.append(item.blurb)
         params.append(item.url)
         conn.execute(
             f"""
-            UPDATE events SET last_seen = ?, title = ?, date_text = ?, place = ?, fee = ?,
+            UPDATE events SET last_seen = ?, title = ?, date_text = ?, published_date = ?, place = ?, fee = ?,
                                categories = ?, links = ?{blurb_clause}
             WHERE url = ?
             """,
@@ -1686,7 +1596,7 @@ def upsert_event(conn: sqlite3.Connection, item: EventItem, today: str) -> bool:
 def fetch_all_current(conn: sqlite3.Connection) -> list:
     """DB内の全件を、表示用にカテゴリ別へ振り分けて返す"""
     cur = conn.execute(
-        "SELECT source, title, date_text, place, fee, categories, url, first_seen, blurb, links "
+        "SELECT source, title, date_text, published_date, place, fee, categories, url, first_seen, blurb, links "
         "FROM events ORDER BY date_text ASC, first_seen DESC"
     )
     rows = cur.fetchall()
@@ -1697,7 +1607,7 @@ def fetch_all_current(conn: sqlite3.Connection) -> list:
 # 開催日フィルタ（更新日から1か月分だけを表示）
 # ----------------------------------------------------------------------------
 
-_FULL_DATE_RE = re.compile(r"(\d{4})\s*[年/\-]\s*(\d{1,2})\s*[月/\-]\s*(\d{1,2})")
+_FULL_DATE_RE = re.compile(r"(\d{4})\s*[年/.\-]\s*(\d{1,2})\s*[月/.\-]\s*(\d{1,2})")
 _SHORT_DATE_RE = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日")
 _SHORT_SLASH_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})\s*/\s*(\d{1,2})(?!\d)")
 
@@ -1761,7 +1671,13 @@ def filter_within_month(rows: list, today: date, days: int = 30) -> list:
         date_text = row[2]
         start, end = parse_date_range(date_text, today)
         if start is None:
-            kept.append(row)  # 日付不明はフィルタしない
+            # 「公開日しかないブログ記事」を開催イベントとして表示しない。
+            # 開催期間を取得できないイベントは、公開日を開催日として代用せず除外する。
+            source = row[0] or ""
+            published_date = row[3] or ""
+            if published_date and ("SHOP BLOG" in source or "ブログ" in source):
+                continue
+            kept.append(row)  # その他の情報源は従来どおり残す
             continue
         if end is None:
             end = start
@@ -1857,11 +1773,11 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
 
     # カテゴリごとにグループ化
     grouped = {label: [] for label in category_order}
-    for source, title, date_text, place, fee, cats, url, first_seen, blurb, links_json in rows:
+    for source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json in rows:
         cat_list = cats.split(",") if cats else []
         for c in cat_list:
             if c in grouped:
-                grouped[c].append((source, title, date_text, place, fee, url, first_seen, blurb, links_json))
+                grouped[c].append((source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json))
 
     sections_html = ""
     today_date = datetime.strptime(today, "%Y-%m-%d").date()
@@ -1876,7 +1792,7 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
         items.sort(key=lambda row: sort_key_for_display(row, today_date))
 
         sections_html += f'<h2>{label} <span class="count">({len(items)}件)</span></h2><div class="cards">'
-        for source, title, date_text, place, fee, url, first_seen, blurb, links_json in items:
+        for source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json in items:
             is_new = " new" if first_seen == today else ""
             badge = '<span class="badge">NEW</span>' if first_seen == today else ""
 
@@ -1903,7 +1819,8 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
               <div class="card-title">{escape_html(title)}</div>
               {'<div class="card-blurb">✨ ' + escape_html(blurb) + '</div>' if blurb else ''}
               <div class="card-meta">
-                {'📅 ' + escape_html(date_text) + '<br>' if date_text else ''}
+                {'📅 開催: ' + escape_html(date_text) + '<br>' if date_text else ''}
+                {'📝 掲載: ' + escape_html(published_date) + '<br>' if published_date else ''}
                 {'📍 ' + escape_html(place) + '<br>' if place else ''}
                 {'💰 ' + escape_html(fee) + '<br>' if fee else ''}
                 <span class="source">{escape_html(source)}</span>
@@ -2109,7 +2026,9 @@ def main() -> None:
                 if AI_ENABLED:
                     ai_cats, ai_blurb = ai_judge(item)
                     if ai_cats is not None:
-                        item.categories = ai_cats  # AIの判定を優先して採用
+                        # 決定論的な共通分類をAI回答で消さない。
+                        # 特に「展示会/POPUP」のような明確なカテゴリは常に保持する。
+                        item.categories = list(dict.fromkeys(item.categories + ai_cats))
                         item.blurb = ai_blurb or ""
                         ai_calls += 1
                 if not item.categories:
@@ -2127,10 +2046,10 @@ def main() -> None:
         out_path = DATA_DIR / f"new_{today}.csv"
         with out_path.open("w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f)
-            writer.writerow(["categories", "source", "title", "date_text", "place", "fee", "url"])
+            writer.writerow(["categories", "source", "title", "date_text(開催日)", "published_date(公開日)", "place", "fee", "url"])
             for it in new_items:
                 writer.writerow([
-                    "/".join(it.categories), it.source, it.title, it.date_text, it.place, it.fee, it.url
+                    "/".join(it.categories), it.source, it.title, it.date_text, it.published_date, it.place, it.fee, it.url
                 ])
         log.info(f"新着 {len(new_items)} 件を保存しました → {out_path}")
     else:
