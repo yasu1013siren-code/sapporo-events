@@ -155,7 +155,7 @@ CATEGORY_INCLUDE = {
         "アニメ展示会", "アニメ原画展", "原画展", "複製原画展", "コラボカフェ",
         # アニメに限らない、一般的な展示会・企画展
         "展示会", "企画展", "特別展", "写真展", "美術展", "個展", "作品展",
-        "博物館", "美術館", "ギャラリー展",
+        "博物館", "美術館", "ギャラリー展", "展覧会", "展",
     ],
     "🛍️ ポップアップストア": [
         "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
@@ -373,6 +373,53 @@ def is_sapporo_venue(venue_text: str) -> bool:
     return any(hint in v for hint in SAPPORO_VENUE_HINTS)
 
 
+# アニメ・ゲーム・漫画系イベントを情報源ごとに個別判定せず、全取得データへ
+# 同じルールを適用するための共通語彙。作品名そのものが含まれないイベントでも、
+# 「原画展」「キャラクター」「公式グッズ」「コラボ」等の周辺語から拾えるようにする。
+MEDIA_HINTS = [
+    "アニメ", "anime", "漫画", "マンガ", "コミック", "comic",
+    "ゲーム", "game", "キャラクター", "キャラ", "原作", "公式グッズ",
+    "描き下ろし", "描きおろし", "キービジュアル", "メインビジュアル",
+    "原画", "複製原画", "設定資料", "アートワーク", "作品展",
+    "アニメ化", "コミックス", "単行本", "少年漫画", "青年漫画",
+]
+
+MEDIA_EVENT_HINTS = [
+    "展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展",
+    "資料展", "作品展", "展", "popup", "pop-up", "ポップアップ",
+    "期間限定", "limited shop", "limited store", "shop", "store",
+    "コラボ", "コラボレーション", "コラボカフェ", "フェア", "物販", "グッズ",
+]
+
+
+def is_anime_game_manga_event(item: EventItem, haystack: str = "") -> bool:
+    """全情報源共通のアニメ・ゲーム・漫画系 展示/POPUP候補判定。
+    情報源名だけに依存せず、タイトル・会場・タグを横断して判定する。"""
+    text = normalize(haystack or f"{item.title} {item.place} {' '.join(item.tags)}").lower()
+    media = any(normalize(k).lower() in text for k in MEDIA_HINTS)
+    event = any(normalize(k).lower() in text for k in MEDIA_EVENT_HINTS)
+    source_hint = any(k in normalize(item.source).lower() for k in [
+        "アニメ", "ゲーム", "漫画", "anime", "walkerplus", "popup"
+    ])
+    return event and (media or source_hint)
+
+
+def classify_media_event(item: EventItem, haystack: str) -> list:
+    """アニメ・ゲーム・漫画系の展示/POPUPを共通分類する補助処理。
+    POPUP語があればポップアップ、展示系語があれば展示会へ振り分ける。"""
+    text = normalize(haystack).lower()
+    if not is_anime_game_manga_event(item, haystack):
+        return []
+    result = []
+    popup = any(k in text for k in ["popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "limited store"])
+    exhibition = any(k in text for k in ["展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展", "資料展", "作品展", "展"])
+    if popup:
+        result.append("🛍️ ポップアップストア")
+    if exhibition:
+        result.append("🖼️ 展示会")
+    return result
+
+
 def classify(item: EventItem) -> list:
     """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ/ポップアップ のどれに該当するか判定
     （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
@@ -391,6 +438,13 @@ def classify(item: EventItem) -> list:
             if any(exc in haystack for exc in excludes):
                 continue
             matched.append(label)
+
+    # ★共通処理：アニメ/ゲーム/漫画の展示・POPUPは情報源ごとの判定に依存しない。
+    # 既に通常分類で拾えていても重複させず、作品系のイベントだけを補完する。
+    for media_cat in classify_media_event(item, haystack):
+        if media_cat not in matched:
+            matched.append(media_cat)
+
     if "デパート催事" in item.tags:
         matched.append(DEPARTMENT_CATEGORY)
     return matched
@@ -870,11 +924,6 @@ def collect_stellarplace_popup(max_items: int = 50) -> Iterable[EventItem]:
                     break
 
             normalized = normalize(block_text).lower()
-            if not any(k in normalized for k in [
-                "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
-            ]):
-                continue
-
             href = a.get("href", "")
             if not href or href.startswith("#"):
                 continue
@@ -942,10 +991,6 @@ def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
                 break
 
         normalized = normalize(block_text).lower()
-        if not any(k in normalized for k in [
-            "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
-        ]):
-            continue
 
         href = a.get("href", "")
         if not href or href.startswith("#"):
@@ -990,10 +1035,6 @@ def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> It
             if not title or len(title) < 3:
                 continue
             normalized = normalize(title).lower()
-            if not any(k.lower() in normalized for k in [
-                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
-            ]):
-                continue
             full_url = href if href.startswith("http") else f"https://shopblog.dmdepart.jp{href}"
             if full_url in seen:
                 continue
@@ -1016,6 +1057,72 @@ def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> It
                 return
         time.sleep(REQUEST_INTERVAL_SEC)
     log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+
+
+def collect_daimaru_sapporo_museum() -> Iterable[EventItem]:
+    """大丸・松坂屋公式の展覧会一覧から、大丸札幌店の展示を取得。
+    一覧ページはイベント個別リンクがない場合もあるため、見出し＋直後の
+    会期・会場テキストを1イベントとして抽出し、後段の共通classify()へ渡す。"""
+    url = "https://dmdepart.jp/museum/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    seen = set()
+    count = 0
+    headings = soup.find_all(["h2", "h3"])
+    for h in headings:
+        title = clean(h.get_text(" ", strip=True))
+        if not title or len(title) < 3:
+            continue
+        block_text = title
+        node = h
+        # 同じカード内の会期・会場を拾う。次の見出しに到達したら終了。
+        for _ in range(8):
+            node = node.find_next_sibling()
+            if node is None:
+                break
+            if getattr(node, "name", None) in ("h2", "h3"):
+                break
+            candidate = clean(node.get_text(" ", strip=True))
+            if candidate:
+                block_text += " " + candidate
+            if len(block_text) > 500:
+                break
+        # ページによっては会期・会場が親要素側にあるため、直近の親も補完。
+        if "大丸札幌店" not in block_text:
+            parent = h.parent
+            if parent is not None:
+                parent_text = clean(parent.get_text(" ", strip=True))
+                if "大丸札幌店" in parent_text and len(parent_text) <= 800:
+                    block_text = parent_text
+        if "大丸札幌店" not in block_text:
+            continue
+
+        date_text = _parse_popup_date_text(block_text)
+        if not date_text:
+            m = re.search(r"\d{4}年\d{1,2}月\d{1,2}日[^大丸]{0,30}", block_text)
+            if m:
+                date_text = m.group(0)
+
+        # 個別URLがない一覧項目でもDB上で別イベントとして保持できるよう、
+        # タイトルから安定したフラグメントを作る。リンク先は公式一覧ページ。
+        import hashlib
+        slug = hashlib.sha1(title.encode("utf-8")).hexdigest()[:12]
+        full_url = f"{url}#{slug}"
+        if full_url in seen:
+            continue
+        seen.add(full_url)
+        count += 1
+        yield EventItem(
+            source="大丸・松坂屋(展覧会)",
+            title=title[:100],
+            url=full_url,
+            date_text=date_text[:80],
+            place="大丸札幌店",
+            tags=["大丸公式展覧会"],
+        )
+    log.info(f"大丸札幌店(展覧会): {count}件")
+
 
 
 def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
@@ -1429,6 +1536,7 @@ SOURCES = {
     "stellarplace_popup": collect_stellarplace_popup,
     "apia_popup": collect_apia_popup,
     "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
+    "daimaru_sapporo_museum": collect_daimaru_sapporo_museum,
     "tanukikoji_popup": collect_tanukikoji_popup,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
