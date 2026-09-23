@@ -2322,9 +2322,7 @@ def infer_tags_from_source(source: str) -> list:
 
 
 def reclassify_all(conn: sqlite3.Connection) -> None:
-    """保存済みの全イベントを、現在のCATEGORY_INCLUDE/EXCLUDE基準で再判定し直す。
-    基準（キーワード）を変更するたびに、過去に保存済みのデータにも新基準が
-    反映されるようにするための処理。"""
+    """保存済みイベントを最新分類で再判定する。SQLiteロック時は待機して再試行する。"""
     cur = conn.execute("SELECT url, source, title, place FROM events")
     rows = cur.fetchall()
     updated = 0
@@ -2332,8 +2330,21 @@ def reclassify_all(conn: sqlite3.Connection) -> None:
         tmp = EventItem(source=source or "", title=title or "", url=url, place=place or "",
                          tags=infer_tags_from_source(source))
         cats = classify(tmp)
-        conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
-        updated += 1
+        for attempt in range(5):
+            try:
+                conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
+                updated += 1
+                break
+            except sqlite3.OperationalError as e:
+                if "locked" not in str(e).lower():
+                    raise
+                conn.rollback()
+                wait = 1.0 * (attempt + 1)
+                log.warning(f"SQLiteロック中: 再試行 {attempt + 1}/5 ({wait:.0f}秒待機)")
+                time.sleep(wait)
+        else:
+            log.error("SQLiteロックが解除されないため、再分類を中止します。次回実行時に再試行します。")
+            return
     conn.commit()
     log.info(f"既存データ {updated} 件を最新の分類基準で再判定しました")
 
@@ -2663,7 +2674,9 @@ def main() -> None:
     today = datetime.now().strftime("%Y-%m-%d")
     log.info("=== 札幌市中央区 情報収集 開始 ===")
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA busy_timeout = 30000")
+    conn.execute("PRAGMA journal_mode = WAL")
     init_db(conn)
     cleanup_stale_manual_urls(conn)  # URLを変更した手動登録イベントの古い重複を削除
     reclassify_all(conn)  # 分類基準が更新されている場合に備え、既存データも最新基準で判定し直す
