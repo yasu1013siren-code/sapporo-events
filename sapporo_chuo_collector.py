@@ -166,8 +166,8 @@ CATEGORY_INCLUDE = {
         "期間限定ショップ", "期間限定店", "期間限定ストア",
         "POP UP SHOP", "POPUP SHOP", "POP UP STORE", "POPUP STORE",
     ],
-    # アニメ・漫画・ゲーム系のPOPUPは、通常のポップアップストアと
-    # 別枠でも確認できるようにする（同じイベントを両方へ表示）。
+    # アニメ・漫画・ゲーム系のPOPUPは、通常のポップアップストアとは
+    # 排他的に扱う。アニメ・ゲーム系に判定されたものは通常POPUPには表示しない。
     "🎮 アニメ・ゲーム関連ポップアップストア": [
         "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
         "期間限定ショップ", "期間限定店", "期間限定ストア",
@@ -925,13 +925,21 @@ def classify(item: EventItem) -> list:
     # （例: 作品名だけのPOPUP）ケースでも、公式逆引きやアニメ専用情報源から拾える。
     media_source = any(marker in media_text for marker in [
         "アニメ・漫画・ゲーム公式", "アニメ・漫画系", "ウォーカープラス(アニメ)",
-        "作品・展覧会専用公式", "メディア系公式", "popup公式",
+        "作品・展覧会専用公式", "メディア系公式",
     ])
+
+    # POPUPカテゴリは排他的にする。
+    # 「POPUP専用ソース」だけではアニメ・ゲーム系とは判定しない。
+    # 作品名/IP名、明示的なアニメ・漫画・ゲーム情報源など、別の根拠が必要。
     if has_popup and (has_media or media_source):
-        if "🛍️ ポップアップストア" not in matched:
-            matched.append("🛍️ ポップアップストア")
+        # アニメ・ゲーム関連POPUPは通常POPUPから外し、こちらだけに入れる。
+        matched = [c for c in matched if c != "🛍️ ポップアップストア"]
         if "🎮 アニメ・ゲーム関連ポップアップストア" not in matched:
             matched.append("🎮 アニメ・ゲーム関連ポップアップストア")
+    elif has_popup:
+        # 一般POPUPは通常カテゴリのみ。
+        if "🛍️ ポップアップストア" not in matched:
+            matched.append("🛍️ ポップアップストア")
     return list(dict.fromkeys(matched))
 
 
@@ -2354,6 +2362,58 @@ def escape_html(text: str) -> str:
     )
 
 
+def _dedupe_display_rows(rows: list) -> list:
+    """同一イベントを複数の公式ソースから拾った場合、表示上は1件に統合する。
+    同一性はタイトル・開催日・会場を正規化して判定し、情報源リンクは統合する。
+    """
+    merged = {}
+    for row in rows:
+        source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json = row
+        def norm_key(v):
+            return re.sub(r"\s+", "", normalize(v or "")).lower()
+        key = (norm_key(title), norm_key(date_text), norm_key(place))
+        if not key[0]:
+            key = ("url", norm_key(url))
+        if key not in merged:
+            merged[key] = [source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json]
+            continue
+        base = merged[key]
+        # カテゴリは両ソースの判定を統合
+        cat_list = list(dict.fromkeys((base[6] or "").split(",") + (cats or "").split(",")))
+        cat_list = [c for c in cat_list if c]
+        # アニメ・ゲーム系POPUPなら通常POPUPを表示しない
+        if "🎮 アニメ・ゲーム関連ポップアップストア" in cat_list:
+            cat_list = [c for c in cat_list if c != "🛍️ ポップアップストア"]
+        base[6] = ",".join(cat_list)
+        # 情報源はまとめ、リンクも統合
+        sources = [x.strip() for x in (base[0] or "").split(" / ") if x.strip()] + [x.strip() for x in (source or "").split(" / ") if x.strip()]
+        base[0] = " / ".join(dict.fromkeys(sources))
+        try:
+            old_links = json.loads(base[10]) if base[10] else []
+        except Exception:
+            old_links = []
+        try:
+            new_links = json.loads(links_json) if links_json else []
+        except Exception:
+            new_links = []
+        all_links = old_links + new_links
+        seen_urls = set()
+        unique_links = []
+        for link in all_links:
+            lu = link.get("url", "") if isinstance(link, dict) else ""
+            if not lu or lu in seen_urls:
+                continue
+            seen_urls.add(lu)
+            unique_links.append(link)
+        if unique_links:
+            base[10] = json.dumps(unique_links, ensure_ascii=False)
+        if not base[3] and published_date:
+            base[3] = published_date
+        if not base[9] and blurb:
+            base[9] = blurb
+    return list(merged.values())
+
+
 def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> str:
     if page_kind == "upcoming":
         page_title_suffix = "（開始前）"
@@ -2363,6 +2423,9 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
         page_title_suffix = "（開催中）"
         page_switch_link = '<a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a>'
         category_order = [c for c in CATEGORY_ORDER if c != "🍿 公開予定映画"]
+
+    # 同一イベントを複数の公式ソースから取得しても、表示は1カードに統合する。
+    rows = _dedupe_display_rows(rows)
 
     # カテゴリごとにグループ化
     grouped = {label: [] for label in category_order}
