@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-sapporo_chuo_collector_ver12.4.py
+sapporo_chuo_collector_ver12.7.py
 ==========================
 札幌市中央区の「飲食・アニメ・ポップアップ・音楽ライブ・映画」情報を毎日自動収集するツール。
 
@@ -365,8 +365,9 @@ def fetch(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
                 # XMLはXMLパーサーで処理し、XMLParsedAsHTMLWarningを防止
                 return BeautifulSoup(resp.content, "xml")
 
-            resp.encoding = resp.apparent_encoding or resp.encoding
-            return BeautifulSoup(resp.text, "lxml")
+            # HTMLはrequestsのapparent_encodingに任せると、日本語サイトで誤判定することがある。
+            # 生バイトをBeautifulSoupへ渡し、meta charset / BOM等を含めて解析させる。
+            return BeautifulSoup(resp.content, "lxml")
         except Exception as e:
             last_error = e
             if attempt <= retries:
@@ -855,20 +856,39 @@ def collect_official_anime_manga_game(max_links_per_source: int = 25) -> Iterabl
     log.info(f"公式逆引き: 札幌開催候補 {count}件")
 
 
+def enforce_category_rules(categories: list) -> list:
+    """カテゴリ間の排他ルールを最後に適用する。
+    アニメ・ゲーム関連POPUPは通常POPUPへ重複表示しない。
+    AI判定後にも必ず呼び出す。
+    """
+    cats = list(dict.fromkeys(c for c in (categories or []) if c))
+    if "🎮 アニメ・ゲーム関連ポップアップストア" in cats:
+        cats = [c for c in cats if c != "🛍️ ポップアップストア"]
+    return cats
+
+
 def classify(item: EventItem) -> list:
     """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ/ポップアップ のどれに該当するか判定
     （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
+    # 情報源名はカテゴリ判定の本文には入れない。
+    # 「札幌PARCO(ポップアップ)」のようなsource名だけで、無関係な記事が
+    # POPUPカテゴリへ入る事故を防ぐ。判定材料はタイトル・会場・明示タグ。
     haystack = normalize(f"{item.title} {item.place} {' '.join(item.tags)}")
     haystack_lower = haystack.lower()
+    popup_title_key = re.sub(r"\s+", "", normalize(item.title or "")).lower()
+    popup_false_positive_titles = {
+        "イベント・ポップアップ", "イベント ポップアップ", "イベント&ポップアップ",
+        "イベント／ポップアップ", "イベント/ポップアップ",
+    }
     matched = []
     for label, includes in CATEGORY_INCLUDE.items():
-        # 専用コレクターが「ポップアップ」と明示した情報は、
-        # タイトルにPOP UP等の文字がなくてもポップアップカテゴリへ入れる。
-        forced_popup = (
-            label == "🛍️ ポップアップストア"
-            and any(t in item.tags for t in ["ポップアップストア", "POPUP専用ソース"])
-        )
-        if forced_popup or any(normalize(inc).lower() in haystack_lower for inc in includes):
+        # POPUPカテゴリでは、タグや情報源名だけでなく実タイトルにPOPUP表現があることを優先。
+        category_haystack_lower = haystack_lower
+        if label in ("🛍️ ポップアップストア", "🎮 アニメ・ゲーム関連ポップアップストア"):
+            category_haystack_lower = normalize(f"{item.title} {item.place}").lower()
+            if popup_title_key in popup_false_positive_titles:
+                continue
+        if any(normalize(inc).lower() in category_haystack_lower for inc in includes):
             # アニメ・ゲーム関連POPUPは、単なる「POP UP」という語だけでは入れず、
             # 下の共通メディア判定でアニメ/ゲーム関連であることを確認してから追加する。
             if label == "🎮 アニメ・ゲーム関連ポップアップストア":
@@ -907,9 +927,14 @@ def classify(item: EventItem) -> list:
         "資料展", "作品展", "展",
     ]
     popup_hints = [
-        "popup", "pop-up", "ポップアップ", "期間限定", "limited shop", "limited store",
+        "popup", "pop-up", "pop up", "ポップアップ",
+        "期間限定ショップ", "期間限定店", "期間限定ストア",
+        "limited shop", "limited store",
     ]
     media_text = normalize(f"{item.title} {item.place} {item.source} {' '.join(item.tags)}").lower()
+    # POPUPそのものの判定はsource名を使わず、タイトル・タグだけを見る。
+    # sourceに「ポップアップ」と入っているだけではPOPUPとはみなさない。
+    popup_text = normalize(item.title or "").lower()
     has_media = any(h.lower() in media_text for h in media_hints) or any(
         h.lower() in media_text for h in media_ip_hints
     ) or any(
@@ -918,7 +943,10 @@ def classify(item: EventItem) -> list:
     if has_media and any(h.lower() in media_text for h in exhibition_hints):
         if "🖼️ 展示会" not in matched:
             matched.append("🖼️ 展示会")
-    has_popup = any(h.lower() in media_text for h in popup_hints) or "ポップアップストア" in item.tags
+    is_popup_false_positive = popup_title_key in {re.sub(r"\s+", "", x).lower() for x in popup_false_positive_titles}
+    # タグだけでPOPUPとは確定しない。古いコレクターが付けた
+    # 「POPUP専用ソース」タグで一般催事が混入するのを防ぐ。
+    has_popup = (not is_popup_false_positive) and any(h.lower() in popup_text for h in popup_hints)
 
     # 「アニメ・ゲーム関連POPUP」は、タイトルだけでなく情報源/タグも判定材料にする。
     # これにより作品名に「アニメ」「ゲーム」が入っていない
@@ -940,7 +968,7 @@ def classify(item: EventItem) -> list:
         # 一般POPUPは通常カテゴリのみ。
         if "🛍️ ポップアップストア" not in matched:
             matched.append("🛍️ ポップアップストア")
-    return list(dict.fromkeys(matched))
+    return enforce_category_rules(matched)
 
 
 # ----------------------------------------------------------------------------
@@ -2316,8 +2344,10 @@ def infer_tags_from_source(source: str) -> list:
         tags.extend(["アニメ・漫画・ゲーム公式", "公式イベント", "公式逆引き収集"])
     if source and ("アニメ" in source or "ゲーム" in source):
         tags.append("アニメ・漫画系")
-    if source and ("ポップアップ" in source or "POPUP" in source.upper() or "POP-UP" in source.upper()):
-        tags.extend(["ポップアップストア", "POPUP専用ソース"])
+    # ポップアップは「情報源名がポップアップだから」という理由だけでは付与しない。
+    # 旧データを再分類するときも、タイトル等に実際のPOPUP表記がある場合だけ
+    # classify()側で判定する。これにより「○○施設(ポップアップ)」という
+    # コレクター名だけを根拠に無関係な記事がPOPUP化するのを防ぐ。
     return list(dict.fromkeys(tags))
 
 
@@ -2329,7 +2359,7 @@ def reclassify_all(conn: sqlite3.Connection) -> None:
     for url, source, title, place in rows:
         tmp = EventItem(source=source or "", title=title or "", url=url, place=place or "",
                          tags=infer_tags_from_source(source))
-        cats = classify(tmp)
+        cats = enforce_category_rules(classify(tmp))
         for attempt in range(5):
             try:
                 conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
@@ -2382,9 +2412,28 @@ def _dedupe_display_rows(rows: list) -> list:
         source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json = row
         def norm_key(v):
             return re.sub(r"\s+", "", normalize(v or "")).lower()
-        key = (norm_key(title), norm_key(date_text), norm_key(place))
-        if not key[0]:
+        title_key = norm_key(title)
+        date_key = norm_key(date_text)
+        place_key = norm_key(place)
+        if not title_key:
             key = ("url", norm_key(url))
+        else:
+            # 同一タイトル・同一会場なら、片方だけ開催日を取得できた場合でも統合。
+            # また、同一タイトル・同一開催日なら会場表記の揺れがあっても統合する。
+            key = None
+            for existing_key, existing in merged.items():
+                if existing_key[0] != title_key:
+                    continue
+                existing_date = norm_key(existing[2])
+                existing_place = norm_key(existing[4])
+                same_place = bool(place_key and existing_place and place_key == existing_place)
+                same_date = bool(date_key and existing_date and date_key == existing_date)
+                one_date_missing_same_place = same_place and (not date_key or not existing_date)
+                if same_place or same_date or one_date_missing_same_place:
+                    key = existing_key
+                    break
+            if key is None:
+                key = (title_key, date_key, place_key)
         if key not in merged:
             merged[key] = [source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json]
             continue
@@ -2395,7 +2444,7 @@ def _dedupe_display_rows(rows: list) -> list:
         # アニメ・ゲーム系POPUPなら通常POPUPを表示しない
         if "🎮 アニメ・ゲーム関連ポップアップストア" in cat_list:
             cat_list = [c for c in cat_list if c != "🛍️ ポップアップストア"]
-        base[6] = ",".join(cat_list)
+        base[6] = ",".join(enforce_category_rules(cat_list))
         # 情報源はまとめ、リンクも統合
         sources = [x.strip() for x in (base[0] or "").split(" / ") if x.strip()] + [x.strip() for x in (source or "").split(" / ") if x.strip()]
         base[0] = " / ".join(dict.fromkeys(sources))
@@ -2697,7 +2746,7 @@ def main() -> None:
                     if ai_cats is not None:
                         # 決定論的な共通分類をAI回答で消さない。
                         # 特に「展示会/POPUP」のような明確なカテゴリは常に保持する。
-                        item.categories = list(dict.fromkeys(item.categories + ai_cats))
+                        item.categories = enforce_category_rules(item.categories + ai_cats)
                         item.blurb = ai_blurb or ""
                         ai_calls += 1
                 if not item.categories:
