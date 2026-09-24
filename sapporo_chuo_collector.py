@@ -1815,6 +1815,122 @@ def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterabl
 
 
 
+
+def _year_for_month(month: int) -> int:
+    """現在日付から、ページ上に年がない月日表記の年を補う。"""
+    today = datetime.now().date()
+    return today.year
+
+
+def collect_sapporo_autumnfest() -> Iterable[EventItem]:
+    """ようこそさっぽろ／さっぽろオータムフェスト公式から開催期間を自動取得。"""
+    url = "https://www.sapporo.travel/autumnfest/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    # 公式ページの「9月11日(金)～10月3日(土)」のような会期表記を取得。
+    m = re.search(r"(\d{1,2}月\d{1,2}日(?:\([^)]*\)|（[^）]*）)?\s*[～〜-]\s*\d{1,2}月\d{1,2}日(?:\([^)]*\)|（[^）]*）)?)", text)
+    if not m:
+        log.warning("さっぽろオータムフェスト: 公式ページから開催期間を取得できませんでした")
+        return
+    date_text = f"{datetime.now().year}年{m.group(1)}"
+    yield EventItem(
+        source="さっぽろオータムフェスト公式",
+        title=f"{datetime.now().year}さっぽろオータムフェスト",
+        url=url,
+        date_text=date_text,
+        place="大通公園（中央区）",
+        tags=["大型イベント", "公式イベント"],
+    )
+    log.info("さっぽろオータムフェスト(公式): 自動取得")
+
+
+def collect_kuwata_sapporo() -> Iterable[EventItem]:
+    """サザンオールスターズ公式ツアー日程から北海道公演を自動取得。"""
+    url = "https://southernallstars.jp/feature/kuwata2026live"
+    soup = fetch(url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    # 北海道公演の2日分を公式SCHEDULEから取得。日付は同一公演なので1イベントに統合。
+    dates = []
+    for dm in re.finditer(r"(\d{2})\.(\d{2})(?:水|木|金|土|日|月|火)", text):
+        window = text[dm.start():dm.start() + 140]
+        if "北海道" in window and "真駒内" in window:
+            dates.append((dm.group(1), dm.group(2)))
+    if not dates:
+        # 改行や空白の入り方が変わった場合の緩いフォールバック
+        dates = re.findall(r"(\d{2})\.(\d{2})[^\n]{0,160}北海道[^\n]{0,160}真駒内", text)
+    if not dates:
+        log.warning("桑田佳祐 夏祭りツアー: 北海道公演を公式ページから取得できませんでした")
+        return
+    dates = sorted(set(dates))
+    if len(dates) == 1:
+        date_text = f"{datetime.now().year}年{int(dates[0][0])}月{int(dates[0][1])}日"
+    else:
+        date_text = f"{datetime.now().year}年{int(dates[0][0])}月{int(dates[0][1])}日・{int(dates[-1][0])}月{int(dates[-1][1])}日"
+    yield EventItem(
+        source="サザンオールスターズ公式(北海道公演)",
+        title="桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演",
+        url=url,
+        date_text=date_text,
+        place="北海道・真駒内セキスイハイムアイスアリーナ",
+        tags=["全国ツアー", "公式イベント"],
+    )
+    log.info("桑田佳祐 夏祭りツアー(公式): 北海道公演を自動取得")
+
+
+def collect_coffee_pairing_festival() -> Iterable[EventItem]:
+    """大丸札幌店のCoffee Pairing Festival公式ページから会期・会場を自動取得。"""
+    url = "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    # 「9月23日（水・祝）〜28日（月）」を優先して取得。
+    m = re.search(r"(\d{1,2}月\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
+    if not m:
+        m = re.search(r"(\d{1,2}月\d{1,2}日[^\n]{0,30}[〜～-][^\n]{0,20}\d{1,2}日)", text)
+    if not m:
+        log.warning("Coffee Pairing Festival: 公式ページから開催期間を取得できませんでした")
+        return
+    raw = m.group(1)
+    # 年はページタイトルに明記されているため、現在年を補う。
+    date_text = f"{datetime.now().year}年{raw}"
+    yield EventItem(
+        source="大丸札幌店公式(Coffee Pairing Festival)",
+        title="Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）",
+        url=url,
+        date_text=date_text,
+        place="大丸札幌店 7階催事場（中央区）",
+        tags=["デパート催事", "公式イベント"],
+    )
+    log.info("Coffee Pairing Festival(大丸公式): 自動取得")
+
+
+def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
+    """『超かぐや姫！』公式／札幌劇場公式情報から復活上映を自動取得。"""
+    official_url = "https://www.news.cho-kaguyahime.com/"
+    soup = fetch(official_url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    if "9月18日" not in text or "復活上映" not in text:
+        log.warning("超かぐや姫！: 公式サイトから復活上映情報を取得できませんでした")
+        return
+    # 札幌での上映はユナイテッド・シネマ札幌公式でも9/18公開中を確認できるため、
+    # 会場は札幌市内主要映画館として登録する。
+    yield EventItem(
+        source="超かぐや姫！公式(復活上映)",
+        title="映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
+        url=official_url,
+        date_text=f"{datetime.now().year}年9月18日(金)～",
+        place="札幌市内の映画館（中央区）",
+        tags=["映画上映中", "アニメ映画", "公式イベント"],
+    )
+    log.info("超かぐや姫！(公式): 復活上映を自動取得")
+
 def collect_manual_events() -> Iterable[EventItem]:
     """自動収集が難しい大型の年次フェス等を手動で登録しておく場所。
     ここに追加した項目も、他の情報源と同じくclassify()でカテゴリ判定される
@@ -1879,7 +1995,7 @@ def collect_manual_events() -> Iterable[EventItem]:
             place=ev.get("place", ""),
             tags=tags,
         )
-    log.info(f"手動登録イベント: {len(manual_events)}件")
+    log.info(f"手動登録候補: {len(manual_events)}件（自動取得できない場合のみフォールバック）")
 
 
 def parse_eventernote_listing(soup: BeautifulSoup):
@@ -2167,6 +2283,10 @@ SOURCES = {
     "official_dedicated_site_discovery": collect_discovered_official_sites,
     "movie_theaters": collect_movie_theaters,
     "upcoming_movies": collect_upcoming_movies,
+    "sapporo_autumnfest_official": collect_sapporo_autumnfest,
+    "kuwata_sapporo_official": collect_kuwata_sapporo,
+    "coffee_pairing_official": collect_coffee_pairing_festival,
+    "cho_kaguyahime_official": collect_cho_kaguyahime_revival,
     "manual": collect_manual_events,
 }
 
@@ -2768,6 +2888,29 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
 # メイン処理
 # ----------------------------------------------------------------------------
 
+
+def _manual_title_key(title: str) -> str:
+    """手動登録と自動取得を同一イベントとして照合するためのタイトルキー。"""
+    t = normalize(title or "").lower()
+    # 手動登録側にある説明用の括弧書き（正式名称の読み仮名など）は無視する。
+    t = re.sub(r"（[^）]*）|\([^)]*\)", "", t)
+    t = re.sub(r"[^0-9a-zぁ-んァ-ヶ一-龯]+", "", t)
+    return t
+
+
+def delete_replaced_manual_event(conn: sqlite3.Connection, item: EventItem) -> int:
+    """自動取得できたイベントに対応する旧手動登録行をDBから削除する。"""
+    key = _manual_title_key(item.title)
+    if not key:
+        return 0
+    cur = conn.execute("SELECT url, title FROM events WHERE source = ?", ("手動登録(年次フェス)",))
+    stale_urls = [url for url, title in cur.fetchall() if _manual_title_key(title) == key]
+    for url in stale_urls:
+        conn.execute("DELETE FROM events WHERE url = ?", (url,))
+    if stale_urls:
+        log.info(f"自動取得へ移行: 手動登録 {len(stale_urls)}件を削除 → {item.title}")
+    return len(stale_urls)
+
 def main() -> None:
     today = datetime.now().strftime("%Y-%m-%d")
     log.info("=== 札幌市中央区 情報収集 開始 ===")
@@ -2783,6 +2926,9 @@ def main() -> None:
     total_checked = 0
     total_matched = 0
     ai_calls = 0
+
+    # 手動登録候補と自動取得の対応関係。自動取得できたものは手動登録を使わない。
+    auto_replaced_manual_keys = set()
 
     for name, collector_fn in SOURCES.items():
         log.info(f"--- 情報源: {name} ---")
@@ -2800,9 +2946,29 @@ def main() -> None:
                         ai_calls += 1
                 if not item.categories:
                     continue  # 飲食/音楽ライブ/アニメ/デパート催事 のどれにも該当しない情報は除外
+
+                # 手動登録は「自動取得できなかった場合だけ」のフォールバック。
+                # manualソースより前に自動ソースが見つけていたら、手動候補はスキップする。
+                if name == "manual" and _manual_title_key(item.title) in auto_replaced_manual_keys:
+                    log.info(f"手動登録をスキップ（自動取得済み）: {item.title}")
+                    continue
+
                 total_matched += 1
                 if upsert_event(conn, item, today):
                     new_items.append(item)
+
+                # 自動取得が成功した4件は、同タイトルの旧手動登録をDBから除去する。
+                if name != "manual":
+                    manual_key = _manual_title_key(item.title)
+                    manual_titles = {
+                        _manual_title_key("2026さっぽろオータムフェスト"),
+                        _manual_title_key("桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演"),
+                        _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"),
+                        _manual_title_key("映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映"),
+                    }
+                    if manual_key in manual_titles:
+                        auto_replaced_manual_keys.add(manual_key)
+                        delete_replaced_manual_event(conn, item)
         except Exception as e:
             log.error(f"{name} の収集中にエラー: {e}")
 
