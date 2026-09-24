@@ -2692,7 +2692,8 @@ def filter_within_month(rows: list, today: date, days: int = 30) -> list:
 
 
 def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> tuple:
-    """開催が「もう始まっている、または開始まで残り約1週間以内（soon_days日以内）」のものと、
+    """開催中・近日開催と開始前を分離する。
+    開催終了日が今日以降なら必ず開催中側に残す。開始前は開始日がsoon_days日を超えて先のものだけ。
     「まだそれより先」のものに分ける。ページを分けて表示するために使う。
     開始が近いイベントを「開始前」ページに埋もれさせず、早めに「開催中」ページ側で
     目に触れるようにする（開始日ちょうどsoon_days日後までを含み、それより先は開始前ページへ）。
@@ -2702,15 +2703,24 @@ def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> t
     soon_cutoff = today + timedelta(days=soon_days)
     for row in rows:
         date_text = row[2]
-        cats = (row[5] or "").split(",")
+        cats = (row[6] or "").split(",")
         if "🍿 公開予定映画" in cats:
             upcoming.append(row)
             continue
         if "🎬 映画" in cats:
             started.append(row)
             continue
-        start, _ = parse_date_range(date_text, today)
-        if start is not None and start > soon_cutoff:
+        start, end = parse_date_range(date_text, today)
+        if start is None:
+            # 開催日不明は既存の情報を落とさないため開催中側に残す。
+            started.append(row)
+            continue
+        if end is not None and end >= today:
+            # 今日まで/今日以降に終了するものは、開始済みなら開催中側。
+            if start <= today:
+                started.append(row)
+                continue
+        if start > soon_cutoff:
             upcoming.append(row)
         else:
             started.append(row)
@@ -2735,14 +2745,20 @@ def infer_tags_from_source(source: str) -> list:
 
 
 def reclassify_all(conn: sqlite3.Connection) -> None:
-    """保存済みイベントを最新分類で再判定する。SQLiteロック時は待機して再試行する。"""
-    cur = conn.execute("SELECT url, source, title, place FROM events")
+    """保存済みイベントを最新分類で再判定する。
+    既存DBにはtagsを保存していないため、既存categoriesを分類材料として保持し、
+    再分類で「開催中」「映画」「催事」等が消えないようにする。SQLiteロック時は待機して再試行。
+    """
+    cur = conn.execute("SELECT url, source, title, date_text, place, categories FROM events")
     rows = cur.fetchall()
     updated = 0
-    for url, source, title, place in rows:
-        tmp = EventItem(source=source or "", title=title or "", url=url, place=place or "",
-                         tags=infer_tags_from_source(source))
-        cats = enforce_category_rules(classify(tmp))
+    for url, source, title, date_text, place, old_categories in rows:
+        existing_categories = [c for c in (old_categories or '').split(',') if c]
+        tmp = EventItem(source=source or "", title=title or "", url=url,
+                         date_text=date_text or "", place=place or "",
+                         tags=infer_tags_from_source(source),
+                         categories=existing_categories)
+        cats = enforce_category_rules(existing_categories + classify(tmp))
         for attempt in range(5):
             try:
                 conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
