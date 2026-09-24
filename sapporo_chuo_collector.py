@@ -195,6 +195,7 @@ CATEGORY_EXCLUDE = {
 }
 # デパート催事は内容キーワードではなく「情報源」で自動判定するカテゴリ（下のclassify()参照）
 DEPARTMENT_CATEGORY = "🏬 デパート催事"
+NON_EVENT_CATEGORY = "📣 キャンペーン・募集・ショップニュース"
 CATEGORY_ORDER = list(CATEGORY_INCLUDE.keys()) + [DEPARTMENT_CATEGORY]
 
 # ----------------------------------------------------------------------------
@@ -233,6 +234,7 @@ AI_SYSTEM_PROMPT = """あなたは札幌市中央区の地域情報まとめサ�
   「札幌PARCO」「札幌ステラプレイス」「アピア」「大丸札幌店」「狸小路商店街」などのポップアップ専用・
   ショップニュース情報源から取得した項目は、通常店舗の営業情報ではなく、期間限定販売・期間限定
   ショップであることが確認できる場合に採用する。
+- 📣 キャンペーン・募集・ショップニュース: 百貨店・商業施設のカードキャンペーン、応募/募集、ポイント企画、ショップニュース、新商品・入荷案内など。これは「🏬 デパート催事」には含めない。
 - 🎵 音楽ライブ: きたえーる、hitaru、Zepp Sapporo、札幌ドーム、真駒内セキスイハイムアイスアリーナ等の
   大型会場、または「全国ツアー」「ワンマン」等メジャー公演を示すもの。ジャンルは邦楽・洋楽(ポップス/ロック等)
   のみ。オーケストラ・クラシック・吹奏楽・合唱・オペラ・バレエなどは含めない。小規模なライブハウス公演も含めない。
@@ -856,6 +858,41 @@ def collect_official_anime_manga_game(max_links_per_source: int = 25) -> Iterabl
     log.info(f"公式逆引き: 札幌開催候補 {count}件")
 
 
+DEPARTMENT_NON_EVENT_HINTS = [
+    "キャンペーン", "キャンペーン中", "プレゼントキャンペーン", "応募", "応募受付",
+    "大募集", "募集", "参加者募集", "エントリー", "申込受付", "申込み受付",
+    "手数料無料", "ポイントアップ", "ポイントプレゼント", "カード会員", "エムアイカード",
+    "クレジットカード", "分割払い", "送料無料", "ノベルティプレゼント",
+    "ショップニュース", "おすすめ商品", "新商品", "新作", "入荷", "再入荷",
+    "お買い得", "お買得", "セール", "フェア開催中", "開催中フェア",
+]
+
+DEPARTMENT_EVENT_HINTS = [
+    "催事", "物産展", "フェア", "マルシェ", "イベント", "展覧会", "展示会", "企画展",
+    "特別展", "原画展", "作品展", "販売会", "即売会", "市", "マーケット", "フェス",
+    "POP UP", "POP-UP", "POPUP", "ポップアップ", "期間限定ショップ", "期間限定店",
+]
+
+def detect_non_event_store_info(item: EventItem) -> bool:
+    """百貨店・商業施設の「催事」情報源に混ざるキャンペーン/募集/ショップニュースを判定。
+    イベント・展示・POPUPとして明確なタイトルは除外対象にしない。"""
+    text = normalize(f"{item.title} {item.place} {' '.join(item.tags)}").lower()
+    title = normalize(item.title or "").lower()
+    non_event = any(normalize(h).lower() in text for h in DEPARTMENT_NON_EVENT_HINTS)
+    if not non_event:
+        return False
+    # 明確なイベント/展示/POPUPタイトルなら通常のイベント分類を優先
+    event_title = any(normalize(h).lower() in title for h in DEPARTMENT_EVENT_HINTS)
+    # 「キャンペーン」と「フェア」のように両方含む場合は、催事として成立するケースもあるため
+    # キャンペーン語がタイトルの主目的である場合のみ非イベント扱いにする。
+    strong_non_event = any(normalize(h).lower() in title for h in [
+        "キャンペーン", "応募", "大募集", "募集", "エントリー", "手数料無料", "ポイントアップ",
+        "カード会員", "エムアイカード", "分割払い", "送料無料", "ショップニュース",
+        "おすすめ商品", "新商品", "新作", "入荷", "再入荷", "お買い得", "お買得",
+    ])
+    return strong_non_event or (non_event and not event_title)
+
+
 def enforce_category_rules(categories: list) -> list:
     """カテゴリ間の排他ルールを最後に適用する。
     アニメ・ゲーム関連POPUPは通常POPUPへ重複表示しない。
@@ -864,6 +901,8 @@ def enforce_category_rules(categories: list) -> list:
     cats = list(dict.fromkeys(c for c in (categories or []) if c))
     if "🎮 アニメ・ゲーム関連ポップアップストア" in cats:
         cats = [c for c in cats if c != "🛍️ ポップアップストア"]
+    if NON_EVENT_CATEGORY in cats:
+        cats = [c for c in cats if c != DEPARTMENT_CATEGORY]
     return cats
 
 
@@ -874,6 +913,7 @@ def classify(item: EventItem) -> list:
     # 「札幌PARCO(ポップアップ)」のようなsource名だけで、無関係な記事が
     # POPUPカテゴリへ入る事故を防ぐ。判定材料はタイトル・会場・明示タグ。
     haystack = normalize(f"{item.title} {item.place} {' '.join(item.tags)}")
+    is_non_event_store_info = detect_non_event_store_info(item)
     haystack_lower = haystack.lower()
     popup_title_key = re.sub(r"\s+", "", normalize(item.title or "")).lower()
     popup_false_positive_titles = {
@@ -898,9 +938,18 @@ def classify(item: EventItem) -> list:
                 continue
             matched.append(label)
     if "デパート催事" in item.tags:
-        matched.append(DEPARTMENT_CATEGORY)
+        if is_non_event_store_info:
+            if NON_EVENT_CATEGORY not in matched:
+                matched.append(NON_EVENT_CATEGORY)
+        else:
+            matched.append(DEPARTMENT_CATEGORY)
 
-    # アニメ・ゲーム・漫画の展示/P0PUPは情報源によって表記揺れが大きいため、
+    if is_non_event_store_info and any(k in (item.source or "") for k in ["催事", "SHOP BLOG", "ショップニュース"]):
+        matched = [c for c in matched if c != DEPARTMENT_CATEGORY]
+        if NON_EVENT_CATEGORY not in matched:
+            matched.append(NON_EVENT_CATEGORY)
+
+    # アニメ・ゲーム・漫画の展示/POPUPは情報源によって表記揺れが大きいため、
     # 情報源をまたいだ共通ルールで補完する。
     media_hints = [
         "アニメ", "anime", "漫画", "マンガ", "コミック", "comic", "ゲーム", "game",
