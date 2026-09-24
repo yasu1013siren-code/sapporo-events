@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-sapporo_chuo_collector_ver12.7.py
+sapporo_chuo_collector_ver12.10.py
 ==========================
 札幌市中央区の「飲食・アニメ・ポップアップ・音楽ライブ・映画」情報を毎日自動収集するツール。
 
@@ -380,6 +380,187 @@ def fetch(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
     log.warning(f"取得失敗(再試行含め断念): {url} ({last_error})")
     return None
 
+
+
+
+# -----------------------------------------------------------------------------
+# URLリンク切れ自動修復
+# -----------------------------------------------------------------------------
+URL_REPAIR_ENABLED = True
+URL_REPAIR_MAX_PER_RUN = 40
+_url_repair_count = 0
+_url_repair_cache = {}
+
+def _registrable_domain(url: str) -> str:
+    """同一公式サイト判定用の簡易登録ドメイン。co.jp等の日本型TLDにも対応。"""
+    host = _domain_of(url)
+    parts = host.split(".")
+    if len(parts) >= 3 and parts[-2] in {
+        "co", "ne", "or", "ac", "go", "gr", "lg", "ed", "ad", "com", "net", "org"
+    } and parts[-1] in {"jp", "uk", "au", "nz", "kr"}:
+        return ".".join(parts[-3:])
+    if len(parts) >= 2:
+        return ".".join(parts[-2:])
+    return host
+
+def _url_status(url: str) -> tuple[int, str]:
+    """URLの状態を確認。戻り値は(status, 最終URL)。
+    404/410だけを「リンク切れ」として修復対象にし、403/429/5xxは触らない。"""
+    if not url:
+        return 0, url
+    if url in _url_repair_cache:
+        return _url_repair_cache[url]
+    try:
+        r = requests.get(url, headers=REQUEST_HEADERS, timeout=20, allow_redirects=True, stream=True)
+        status = r.status_code
+        final_url = r.url or url
+        r.close()
+        result = (status, final_url)
+    except Exception as e:
+        log.debug(f"URL確認失敗: {url} ({e})")
+        result = (0, url)
+    _url_repair_cache[url] = result
+    return result
+
+def _title_search_candidates(title: str, old_url: str, limit: int = 8) -> list[str]:
+    """同一公式ドメインに限定して、旧URLが404になった場合の新URL候補を探す。
+    DuckDuckGo HTML検索を使い、検索結果のリンク先が旧URLと同一登録ドメインの場合だけ採用する。"""
+    if not title or not old_url:
+        return []
+    from urllib.parse import quote_plus, urlparse
+    domain = _domain_of(old_url)
+    reg = _registrable_domain(old_url)
+    query = f'site:{domain} "{title}"'
+    search_url = "https://html.duckduckgo.com/html/?q=" + quote_plus(query)
+    try:
+        r = requests.get(search_url, headers=REQUEST_HEADERS, timeout=20)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.content, "lxml")
+    except Exception as e:
+        log.debug(f"URL再検索失敗: {title} ({e})")
+        return []
+
+    candidates = []
+    for a in soup.select("a.result__a[href], a[data-testid='result-title-a'][href]"):
+        href = a.get("href", "")
+        href = _absolute_url(search_url, href)
+        if not href.startswith("http"):
+            continue
+        h = _domain_of(href)
+        if _registrable_domain(href) != reg:
+            continue
+        # 検索結果自身のDuckDuckGo URLやログインページ等を除外
+        path = urlparse(href).path.lower()
+        if any(x in path for x in ["/login", "/search", "/account"]):
+            continue
+        if href not in candidates:
+            candidates.append(href)
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+def _sitemap_candidates(title: str, old_url: str, limit: int = 20) -> list[str]:
+    """robots.txt / sitemap.xmlから同一サイトのURLを探す。"""
+    from urllib.parse import urljoin
+    base = f"https://{_domain_of(old_url)}"
+    sitemap_urls = [urljoin(base, "/sitemap.xml"), urljoin(base, "/robots.txt")]
+    locs = []
+    for su in sitemap_urls:
+        try:
+            r = requests.get(su, headers=REQUEST_HEADERS, timeout=15)
+            if r.status_code != 200:
+                continue
+            text = r.text
+            if su.endswith("robots.txt"):
+                for line in text.splitlines():
+                    if line.lower().startswith("sitemap:"):
+                        locs.append(line.split(":", 1)[1].strip())
+            else:
+                locs.append(su)
+        except Exception:
+            continue
+
+    title_terms = [x for x in re.split(r"[^0-9A-Za-zぁ-んァ-ヶ一-龯]+", normalize(title).lower()) if len(x) >= 2]
+    candidates = []
+    for sm in locs[:5]:
+        try:
+            r = requests.get(sm, headers=REQUEST_HEADERS, timeout=20)
+            if r.status_code != 200:
+                continue
+            soup = BeautifulSoup(r.content, "xml")
+            for loc in soup.find_all("loc"):
+                href = clean(loc.get_text())
+                if not href.startswith("http") or _registrable_domain(href) != _registrable_domain(old_url):
+                    continue
+                score = sum(1 for term in title_terms if term in href.lower())
+                if score:
+                    candidates.append((score, href))
+        except Exception:
+            continue
+    candidates.sort(key=lambda x: (-x[0], x[1]))
+    return [u for _score, u in candidates[:limit]]
+
+def migrate_repaired_db_url(conn: sqlite3.Connection, old_url: str, new_url: str) -> None:
+    """URL自動修復でURLが変わった場合、DBの旧URL主キーも新URLへ移行する。
+    新URLが既に存在する場合は旧行を削除して重複を防ぐ。"""
+    if not old_url or not new_url or old_url == new_url:
+        return
+    try:
+        old_row = conn.execute("SELECT url FROM events WHERE url = ?", (old_url,)).fetchone()
+        if old_row is None:
+            return
+        new_row = conn.execute("SELECT url FROM events WHERE url = ?", (new_url,)).fetchone()
+        if new_row is not None:
+            conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+            log.info(f"URL修復後の重複旧URLを削除: {old_url}")
+        else:
+            conn.execute("UPDATE events SET url = ? WHERE url = ?", (new_url, old_url))
+            log.info(f"DBのイベントURLを移行: {old_url} -> {new_url}")
+    except sqlite3.IntegrityError:
+        conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+
+def repair_event_url(item: EventItem) -> EventItem:
+    """イベントURLが404/410になっていたら、同一公式サイト内で新URLを自動発見して差し替える。
+    403/429/5xxやネットワーク障害ではURLを変更しない。
+    リダイレクト先が正常なら、その正規URLへ更新する。"""
+    global _url_repair_count
+    if not URL_REPAIR_ENABLED or not item.url or _url_repair_count >= URL_REPAIR_MAX_PER_RUN:
+        return item
+
+    status, final_url = _url_status(item.url)
+    if status in (200, 204):
+        if final_url and final_url != item.url and _domain_of(final_url) == _domain_of(item.url):
+            log.info(f"URLリダイレクトを正規化: {item.title} | {item.url} -> {final_url}")
+            item.url = final_url
+        return item
+    if status in (301, 302, 303, 307, 308):
+        if final_url and _registrable_domain(final_url) == _registrable_domain(item.url):
+            item.url = final_url
+        return item
+    if status not in (404, 410):
+        return item
+
+    _url_repair_count += 1
+    candidates = _sitemap_candidates(item.title, item.url)
+    candidates += _title_search_candidates(item.title, item.url)
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if _registrable_domain(candidate) != _registrable_domain(item.url):
+            continue
+        c_status, c_final = _url_status(candidate)
+        if c_status in (200, 204):
+            repaired = c_final or candidate
+            if _registrable_domain(repaired) != _registrable_domain(item.url):
+                continue
+            old = item.url
+            item.url = repaired
+            log.info(f"URLリンク切れを自動修復: {item.title} | {old} -> {repaired}")
+            return item
+    log.warning(f"URLリンク切れを検出したが自動修復できませんでした: {item.title} | {item.url}")
+    return item
 
 def clean(text: Optional[str]) -> str:
     if not text:
@@ -2935,6 +3116,11 @@ def main() -> None:
         try:
             for item in collector_fn():
                 total_checked += 1
+                # 404/410になった旧URLは、同一公式サイト内を検索して新URLへ自動修復。
+                old_item_url = item.url
+                item = repair_event_url(item)
+                if item.url != old_item_url:
+                    migrate_repaired_db_url(conn, old_item_url, item.url)
                 item.categories = classify(item)  # まずキーワードで一次判定（AI無効時/失敗時の土台にもなる）
                 if AI_ENABLED:
                     ai_cats, ai_blurb = ai_judge(item)
