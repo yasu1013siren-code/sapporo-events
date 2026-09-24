@@ -527,6 +527,18 @@ def repair_event_url(item: EventItem) -> EventItem:
     if not URL_REPAIR_ENABLED or not item.url or _url_repair_count >= URL_REPAIR_MAX_PER_RUN:
         return item
 
+    # 既知の公式URL移転は検索に頼らず即時修復する。
+    known_url_aliases = {
+        "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/":
+            "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/",
+    }
+    alias = known_url_aliases.get(item.url.rstrip("/"))
+    if alias:
+        old = item.url
+        item.url = alias
+        log.info(f"既知URL移転を自動修復: {item.title} | {old} -> {alias}")
+        return item
+
     status, final_url = _url_status(item.url)
     if status in (200, 204):
         if final_url and final_url != item.url and _domain_of(final_url) == _domain_of(item.url):
@@ -2070,15 +2082,14 @@ def collect_coffee_pairing_festival() -> Iterable[EventItem]:
         return
     text = clean(" ".join(soup.stripped_strings))
     # 「9月23日（水・祝）〜28日（月）」を優先して取得。
-    m = re.search(r"(\d{1,2}月\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
+    # 公式ページのファーストビューに会期が明記されているため、まずその表記を厳密に探す。
+    # 2026年の公式会期は「9月23日（水・祝）〜28日（月）」。
+    m = re.search(r"(9月23日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*28日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
     if not m:
-        m = re.search(r"(\d{1,2}月\d{1,2}日[^\n]{0,30}[〜～-][^\n]{0,20}\d{1,2}日)", text)
-    if not m:
-        log.warning("Coffee Pairing Festival: 公式ページから開催期間を取得できませんでした")
-        return
-    raw = m.group(1)
-    # 年はページタイトルに明記されているため、現在年を補う。
-    date_text = f"{datetime.now().year}年{raw}"
+        m = re.search(r"(\d{1,2}月\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
+    # ページ構造変更時も、この公式イベントの既知の会期を安全なフォールバックとして使用する。
+    raw = m.group(1) if m else "9月23日（水・祝）〜28日（月）"
+    date_text = f"2026年{raw}"
     yield EventItem(
         source="大丸札幌店公式(Coffee Pairing Festival)",
         title="Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）",
@@ -2136,9 +2147,9 @@ def collect_manual_events() -> Iterable[EventItem]:
         },
         {
             "title": "Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）",
-            "date_text": "2026年9月30日(水)〜10月6日(火)",
+            "date_text": "2026年9月23日(水・祝)〜28日(月)",
             "place": "大丸札幌店 7階催事場（中央区）",
-            "url": "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/",
+            "url": "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/",
         },
         {
             "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
@@ -2475,6 +2486,28 @@ SOURCES = {
 # ----------------------------------------------------------------------------
 # データベース
 # ----------------------------------------------------------------------------
+
+def migrate_legacy_manual_event_urls(conn: sqlite3.Connection) -> None:
+    """既知の旧手動登録URLを削除し、現行公式URLの自動取得/フォールバックへ一本化する。
+
+    Coffee Pairing Festival 2026 は旧URLが404になり、旧手動登録には誤った会期
+    (9/30〜10/6)が残っていたため、実行開始時に旧行を除去する。自動取得が成功すれば
+    公式ソースを採用し、失敗した場合は同じ実行のmanualフォールバックが正しいURL/会期で再登録する。
+    """
+    legacy_urls = {
+        "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/",
+    }
+    legacy_title_key = _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）")
+    cur = conn.execute("SELECT url, title, source FROM events WHERE source = ?", ("手動登録(年次フェス)",))
+    removed = 0
+    for url, title, source in cur.fetchall():
+        if url in legacy_urls or _manual_title_key(title) == legacy_title_key:
+            conn.execute("DELETE FROM events WHERE url = ?", (url,))
+            removed += 1
+    if removed:
+        conn.commit()
+        log.info(f"旧Coffee Pairing Festival手動登録を整理: {removed}件削除")
+
 
 def cleanup_stale_manual_urls(conn: sqlite3.Connection) -> None:
     """手動登録イベントはURLを変更することがあるため、現在のmanual_eventsに
@@ -3100,6 +3133,7 @@ def main() -> None:
     conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA journal_mode = WAL")
     init_db(conn)
+    migrate_legacy_manual_event_urls(conn)  # 旧URL・旧会期のCoffee Pairing手動登録を先に除去
     cleanup_stale_manual_urls(conn)  # URLを変更した手動登録イベントの古い重複を削除
     reclassify_all(conn)  # 分類基準が更新されている場合に備え、既存データも最新基準で判定し直す
 
