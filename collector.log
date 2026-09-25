@@ -3280,3 +3280,103 @@
 2026-09-25 17:18:25,840 [INFO] HTMLレポート(開始前)を更新しました → C:\Users\user\projects\sapporo-events\data\upcoming.html
 2026-09-25 17:18:25,868 [INFO] チェック件数(延べ): 607 / 対象カテゴリ一致: 502 / 新着: 0 / AI判定利用: 0件(無効:GEMINI_API_KEY未設定)
 2026-09-25 17:18:25,868 [INFO] === 完了 ===
+2026-09-26 00:36:33,916 [INFO] === 札幌市中央区 情報収集 開始 ===
+2026-09-26 00:36:33,925 [INFO] 手動登録候補: 3件（自動取得できない場合のみフォールバック）
+2026-09-26 00:36:34,053 [INFO] 既存データ 714 件を最新の分類基準で再判定しました
+2026-09-26 00:36:34,053 [INFO] --- 情報源: satsuibe ---
+2026-09-26 00:37:53,779 [INFO] サツイベ: 1ページ目 28件
+2026-09-26 00:38:33,546 [INFO] サツイベ: 2ページ目 12件
+2026-09-26 00:39:22,945 [INFO] サツイベ: 3ページ目 13件
+2026-09-26 00:39:54,039 [INFO] サツイベ: 4ページ目 8件
+2026-09-26 00:39:56,662 [INFO] サツイベ: 5ページ目 0件
+2026-09-26 00:39:56,662 [INFO] --- 情報源: chikaho ---
+2026-09-26 00:39:58,778 [INFO] チ・カ・ホ: 0件
+2026-09-26 00:39:58,778 [INFO] --- 情報源: cube_garden ---
+2026-09-26 00:40:00,817 [INFO] cube garden: 2件（日付らしき記載がある行のみ抽出。要目視確認）
+2026-09-26 00:40:00,817 [INFO] --- 情報源: walkerplus_live ---
+2026-09-26 00:40:08,864 [INFO] ウォーカープラス(音楽): 8件チェック（メジャー会場/ツアー語句一致のみ後で採用）
+2026-09-26 00:40:08,865 [INFO] --- 情報源: walkerplus_anime ---
+2026-09-26 00:40:10,696 [INFO] ウォーカープラス(アニメ): 0件チェック（原画展/POP UP等の語句一致のみ後で採用）
+2026-09-26 00:40:10,696 [INFO] --- 情報源: eventernote_major ---
+2026-09-26 00:41:14,009 [INFO] イベンターノート(主要会場): 300件チェック
+2026-09-26 00:41:14,010 [INFO] --- 情報源: mitsukoshi ---
+2026-09-26 00:41:15,899 [INFO] 札幌三越(催事): 7件
+2026-09-26 00:41:15,900 [INFO] --- 情報源: maruiimai ---
+2026-09-26 00:41:17,801 [INFO] 丸井今井札幌本店(催事): 5件
+2026-09-26 00:41:17,801 [INFO] --- 情報源: sapporo_factory ---
+2026-09-26 00:41:21,045 [INFO] サッポロファクトリー(催事): 8件
+2026-09-26 00:41:21,045 [INFO] --- 情報源: sapporo_parco_popup ---
+2026-09-26 00:41:37,607 [INFO] 札幌PARCO(全イベント): 8件
+2026-09-26 00:41:37,607 [INFO] --- 情報源: stellarplace_popup ---
+2026-09-26 00:41:42,578 [INFO] 札幌ステラプレイス(ポップアップ): 0件
+2026-09-26 00:41:42,579 [INFO] --- 情報源: apia_popup ---
+2026-09-26 00:41:44,251 [INFO] アピア(ポップアップ): 0件
+2026-09-26 00:41:44,251 [INFO] --- 情報源: daimaru_sapporo_museum ---
+2026-09-26 00:41:46,093 [INFO] 大丸札幌店(展覧会): 鋼の錬金術師×黄泉のツガイ展を取得
+2026-09-26 00:41:46,094 [INFO] --- 情報源: daimaru_sapporo_popup ---
+2026-09-26 00:42:09,144 [INFO] 大丸札幌店(SHOP BLOG): 3件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）
+2026-09-26 00:42:09,144 [INFO] --- 情報源: tanukikoji_popup ---
+2026-09-26 00:42:23,851 [INFO] 狸小路商店街(全イベント): 30件
+2026-09-26 00:42:23,851 [INFO] --- 情報源: official_anime_manga_game_reverse ---
+2026-09-26 00:42:25,530 [INFO] 公式逆引き[SQUARE ENIX]: 詳細候補 9件
+2026-09-26 00:42:42,442 [INFO] 公式逆引き[集英社]: 詳細候補 16件
+2026-09-26 00:43:13,734 [INFO] 公式逆引き[講談社]: 詳細候補 25件
+2026-09-26 00:44:03,186 [INFO] 公式逆引き[小学館]: 詳細候補 2件
+2026-09-26 00:44:08,550 [INFO] 公式逆引き[アニプレックス]: 詳細候補 25件
+2026-09-26 00:44:53,795 [INFO] 公式逆引き[KADOKAWA]: 詳細候補 25件
+2026-09-26 00:45:41,339 [INFO] 公式逆引き[KADOKAWA Animation]: 詳細候補 17件
+2026-09-26 00:46:11,368 [INFO] 公式逆引き: 札幌開催候補 0件
+2026-09-26 00:46:11,368 [INFO] --- 情報源: official_dedicated_site_discovery ---
+2026-09-26 00:50:14,518 [INFO] 専用公式サイト自動発見: 30サイト
+2026-09-26 00:51:11,089 [INFO] --- 情報源: movie_theaters ---
+2026-09-26 00:52:43,497 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv91749/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv91749/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:52:54,021 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv90400/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv90400/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:04,557 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv81466/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv81466/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:15,073 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv86806/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv86806/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:25,607 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv91337/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv91337/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:36,132 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv91585/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv91585/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:46,651 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv90750/schedule/th220/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv90750/schedule/th220/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:53:57,170 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93247/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93247/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:54:07,684 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93021/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93021/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:54:18,201 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93202/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93202/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:54:28,714 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93676/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93676/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:54:39,240 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93462/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93462/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:54:49,758 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv37209/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv37209/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:00,271 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv75321/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv75321/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:10,786 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv12199/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv12199/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:21,300 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93412/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93412/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:31,819 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93884/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93884/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:42,335 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv92744/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv92744/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:55:52,866 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv90689/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv90689/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:03,378 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv90398/schedule/th592/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv90398/schedule/th592/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:14,391 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv94374/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv94374/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:24,905 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv94373/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv94373/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:35,419 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv94371/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv94371/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:45,941 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv94309/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv94309/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:56:56,472 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93774/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93774/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:06,995 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv93668/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv93668/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:17,530 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/mv94375/schedule/th828/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /mv94375/schedule/th828/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:17,532 [INFO] 映画館(上映中): 25件（うちアニメ映画と判定: 5件）
+2026-09-26 00:57:17,533 [INFO] 映画館(上映中) 取得タイトル一覧: ['ディスクロージャー・デイ', 'ハート・オブ・ビースト', 'マッチング TRUE LOVE', '藁にもすがる獣たち', 'ファーストライド', 'メイドインアビス 烈日の黄金郷【後編】7話～12話', 'アベンジャーズ／エンドゲーム：アンコール', '踊る大捜査線 N.E.W. メトロポリスを駆け抜けろ！', '映画名探偵プリキュア！不思議な庭と2人の秘密', '八つ墓村', 'さとこはいつも', '「メイドインアビス 烈日の黄金郷」【前編】1話～6話', 'ルックバック', '5秒で完全犯罪を生成する方法', '最終楽章 響け！ユーフォニアム 後編', '劇場版 少女☆歌劇 レヴュースタァライト', 'オデュッセイア', '白鳥とコウモリ', 'バックルームズ', '劇場版 魔法少女まどか☆マギカ 〈ワルプルギスの廻天〉', '時には懺悔を', 'ブルーロック', 'ミニオンズ＆モンスターズ', '映画クレヨンしんちゃん 奇々怪々！オラの妖怪バケ～ション', 'スパイダーマン：ブランド・ニュー・デイ']
+2026-09-26 00:57:17,537 [INFO] --- 情報源: upcoming_movies ---
+2026-09-26 00:57:28,067 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/list/coming/2026/09/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /list/coming/2026/09/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:38,581 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/list/coming/2026/10/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /list/coming/2026/10/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:49,113 [WARNING] 取得失敗(再試行含め断念): https://press.moviewalker.jp/list/coming/2026/11/ (HTTPSConnectionPool(host='press.moviewalker.jp', port=443): Max retries exceeded with url: /list/coming/2026/11/ (Caused by NameResolutionError("HTTPSConnection(host='press.moviewalker.jp', port=443): Failed to resolve 'press.moviewalker.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:49,113 [INFO] 映画館(公開予定): 0件（うちアニメ映画と判定: 0件）
+2026-09-26 00:57:49,114 [INFO] 映画館(公開予定) フィルタ前の全件(0件): []...
+2026-09-26 00:57:49,114 [INFO] --- 情報源: sapporo_autumnfest_official ---
+2026-09-26 00:57:59,647 [WARNING] 取得失敗(再試行含め断念): https://www.sapporo.travel/autumnfest/ (HTTPSConnectionPool(host='www.sapporo.travel', port=443): Max retries exceeded with url: /autumnfest/ (Caused by NameResolutionError("HTTPSConnection(host='www.sapporo.travel', port=443): Failed to resolve 'www.sapporo.travel' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:57:59,648 [INFO] --- 情報源: kuwata_sapporo_official ---
+2026-09-26 00:58:10,166 [WARNING] 取得失敗(再試行含め断念): https://southernallstars.jp/feature/kuwata2026live (HTTPSConnectionPool(host='southernallstars.jp', port=443): Max retries exceeded with url: /feature/kuwata2026live (Caused by NameResolutionError("HTTPSConnection(host='southernallstars.jp', port=443): Failed to resolve 'southernallstars.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:58:10,166 [INFO] --- 情報源: coffee_pairing_official ---
+2026-09-26 00:58:20,676 [WARNING] 取得失敗(再試行含め断念): https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/ (HTTPSConnectionPool(host='www.daimaru.co.jp', port=443): Max retries exceeded with url: /sapporo/coffeepairingfestival2026/ (Caused by NameResolutionError("HTTPSConnection(host='www.daimaru.co.jp', port=443): Failed to resolve 'www.daimaru.co.jp' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:58:20,691 [WARNING] Coffee Pairing Festival(大丸公式): 公式ページ取得失敗のため、公式URL/公式会期の安全なフォールバックで登録
+2026-09-26 00:58:20,692 [INFO] --- 情報源: cho_kaguyahime_official ---
+2026-09-26 00:58:31,224 [WARNING] 取得失敗(再試行含め断念): https://www.news.cho-kaguyahime.com/ (HTTPSConnectionPool(host='www.news.cho-kaguyahime.com', port=443): Max retries exceeded with url: / (Caused by NameResolutionError("HTTPSConnection(host='www.news.cho-kaguyahime.com', port=443): Failed to resolve 'www.news.cho-kaguyahime.com' ([Errno 11001] getaddrinfo failed)")))
+2026-09-26 00:58:31,225 [INFO] --- 情報源: manual ---
+2026-09-26 00:58:31,241 [INFO] 手動登録候補: 3件（自動取得できない場合のみフォールバック）
+2026-09-26 00:58:31,289 [INFO] 新着 3 件を保存しました → C:\Users\user\projects\sapporo-events\data\new_2026-09-26.csv
+2026-09-26 00:58:31,344 [INFO] HTMLレポート(開催中)を更新しました → C:\Users\user\projects\sapporo-events\data\index.html
+2026-09-26 00:58:31,355 [INFO] HTMLレポート(開始前)を更新しました → C:\Users\user\projects\sapporo-events\data\upcoming.html
+2026-09-26 00:58:31,365 [INFO] チェック件数(延べ): 463 / 対象カテゴリ一致: 361 / 新着: 3 / AI判定利用: 0件(無効:GEMINI_API_KEY未設定)
+2026-09-26 00:58:31,365 [INFO] === 完了 ===

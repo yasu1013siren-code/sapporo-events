@@ -2075,12 +2075,15 @@ def collect_kuwata_sapporo() -> Iterable[EventItem]:
 
 
 def collect_coffee_pairing_festival() -> Iterable[EventItem]:
-    """大丸札幌店のCoffee Pairing Festival公式ページから会期・会場を自動取得。"""
+    """大丸札幌店のCoffee Pairing Festival公式ページから会期・会場を取得。
+
+    公式ページへの一時的な接続失敗で開催中イベントが消えないよう、
+    公式URL・公式掲載済みの会期を安全なフォールバックとして保持する。
+    手動登録には戻さず、この公式ソース自身が最後までイベントを生成する。
+    """
     url = "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/"
     soup = fetch(url)
-    if soup is None:
-        return
-    text = clean(" ".join(soup.stripped_strings))
+    text = clean(" ".join(soup.stripped_strings)) if soup is not None else ""
     # 「9月23日（水・祝）〜28日（月）」を優先して取得。
     # 公式ページのファーストビューに会期が明記されているため、まずその表記を厳密に探す。
     # 2026年の公式会期は「9月23日（水・祝）〜28日（月）」。
@@ -2098,7 +2101,10 @@ def collect_coffee_pairing_festival() -> Iterable[EventItem]:
         place="大丸札幌店 7階催事場（中央区）",
         tags=["デパート催事", "公式イベント"],
     )
-    log.info("Coffee Pairing Festival(大丸公式): 自動取得")
+    if soup is None:
+        log.warning("Coffee Pairing Festival(大丸公式): 公式ページ取得失敗のため、公式URL/公式会期の安全なフォールバックで登録")
+    else:
+        log.info("Coffee Pairing Festival(大丸公式): 自動取得")
 
 
 def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
@@ -2144,12 +2150,6 @@ def collect_manual_events() -> Iterable[EventItem]:
             "date_text": "2026年8月27日(木)・28日(金)",
             "place": "真駒内セキスイハイムアイスアリーナ",
             "url": "https://southernallstars.jp/feature/kuwata2026live#sapporo2026",
-        },
-        {
-            "title": "Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）",
-            "date_text": "2026年9月23日(水・祝)〜28日(月)",
-            "place": "大丸札幌店 7階催事場（中央区）",
-            "url": "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/",
         },
         {
             "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
@@ -2501,7 +2501,7 @@ def migrate_legacy_manual_event_urls(conn: sqlite3.Connection) -> None:
     cur = conn.execute("SELECT url, title, source FROM events WHERE source = ?", ("手動登録(年次フェス)",))
     removed = 0
     for url, title, source in cur.fetchall():
-        if url in legacy_urls or _manual_title_key(title) == legacy_title_key:
+        if url in legacy_urls:
             conn.execute("DELETE FROM events WHERE url = ?", (url,))
             removed += 1
     if removed:
@@ -2650,6 +2650,18 @@ def parse_date_range(date_text: str, today: date):
         if _inside_full_span(m.start()):
             continue
         matches.append((None, int(m.group(1)), int(m.group(2))))
+
+    # 「9月23日〜28日」のように、後半が「日」だけ省略される日本語表記にも対応。
+    # 前半の月・年を引き継いで終了日を生成する。
+    day_only_matches = []
+    for m in re.finditer(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日[^0-9]{0,20}[〜～\-~・]\s*(\d{1,2})\s*日", date_text):
+        # 前半の「9月23日」が年付きフル日付のspan内でも、後半の「28日」は
+        # 別の日付として必要なので、ここではspan除外しない。
+        mo, d1, d2 = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        year_match = re.search(r"(\d{4})\s*年\s*" + str(mo) + r"\s*月", date_text[max(0, m.start()-10):m.start()+10])
+        y = int(year_match.group(1)) if year_match else None
+        day_only_matches.append((y, mo, d2))
+    matches.extend(day_only_matches)
 
     dates = []
     for y, mo, d in matches:
@@ -3199,7 +3211,6 @@ def main() -> None:
                     manual_titles = {
                         _manual_title_key("2026さっぽろオータムフェスト"),
                         _manual_title_key("桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演"),
-                        _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"),
                         _manual_title_key("映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映"),
                     }
                     if manual_key in manual_titles:
