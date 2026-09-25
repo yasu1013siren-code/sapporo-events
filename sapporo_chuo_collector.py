@@ -2107,6 +2107,46 @@ def collect_coffee_pairing_festival() -> Iterable[EventItem]:
         log.info("Coffee Pairing Festival(大丸公式): 自動取得")
 
 
+def ensure_coffee_pairing_festival(conn: sqlite3.Connection, today: str) -> None:
+    """Coffee Pairing Festival 2026 をDB上で必ず公式イベントとして同期する。
+
+    自動収集・手動フォールバック・旧DBの残骸が混在しても、同一イベントを
+    1件に正規化するための最終同期処理。公式ページの現行会期は
+    2026/9/23〜9/28、大丸札幌店7階催事場。
+    """
+    url = "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/"
+    title = "Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"
+    date_text = "2026年9月23日（水・祝）〜28日（月）"
+    place = "大丸札幌店 7階催事場（中央区）"
+    cats = ["🎪 中心部のイベント情報", "🏬 デパート催事"]
+
+    # URLが違う、sourceが古い、タイトル表記が違う等の旧レコードを先に整理。
+    cur = conn.execute("SELECT url, title FROM events")
+    remove_urls = []
+    target_key = _manual_title_key(title)
+    for old_url, old_title in cur.fetchall():
+        key = _manual_title_key(old_title or "")
+        if ("coffee pairing festival" in (old_title or "").lower()
+                or "コーヒーペアリングフェスティバル" in (old_title or "")
+                or (key and key == target_key)) and old_url != url:
+            remove_urls.append(old_url)
+    for old_url in remove_urls:
+        conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+    if remove_urls:
+        log.info(f"Coffee Pairing Festival旧レコード整理: {len(remove_urls)}件削除")
+
+    # 現行公式URLを主キーとして、必ず最新の公式情報へ同期。
+    conn.execute("""
+        INSERT INTO events (url, source, title, date_text, published_date, place, fee, categories, blurb, links, first_seen, last_seen)
+        VALUES (?, ?, ?, ?, '', ?, '', ?, '', '', ?, ?)
+        ON CONFLICT(url) DO UPDATE SET
+            source=excluded.source, title=excluded.title, date_text=excluded.date_text,
+            place=excluded.place, categories=excluded.categories, last_seen=excluded.last_seen
+    """, (url, "大丸札幌店公式(Coffee Pairing Festival)", title, date_text, place, ",".join(cats), today, today))
+    conn.commit()
+    log.info("Coffee Pairing Festival: 公式情報をDBへ最終同期（9/23〜9/28・大丸札幌店7階催事場）")
+
+
 def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
     """『超かぐや姫！』公式／札幌劇場公式情報から復活上映を自動取得。"""
     official_url = "https://www.news.cho-kaguyahime.com/"
@@ -3212,6 +3252,7 @@ def main() -> None:
                         _manual_title_key("2026さっぽろオータムフェスト"),
                         _manual_title_key("桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演"),
                         _manual_title_key("映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映"),
+                        _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"),
                     }
                     if manual_key in manual_titles:
                         auto_replaced_manual_keys.add(manual_key)
@@ -3219,6 +3260,9 @@ def main() -> None:
         except Exception as e:
             log.error(f"{name} の収集中にエラー: {e}")
 
+    # 公式イベントの最終同期。収集経路や旧DBの残骸に左右されず、
+    # Coffee Pairing Festival 2026 が必ず掲載対象になるようにする。
+    ensure_coffee_pairing_festival(conn, today)
     conn.commit()
 
     # 今回の新着分だけをCSVに保存
