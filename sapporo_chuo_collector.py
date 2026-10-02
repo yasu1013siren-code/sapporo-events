@@ -2721,36 +2721,30 @@ def parse_date_range(date_text: str, today: date):
 
 def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     """開催日が「今日 〜 今日+days日」に重なるものだけを残す。
-    日付が読み取れなかった項目は、情報を落とさないよう念のため残す。"""
+    開催日を解析できない項目は表示しない。公開日を開催日の代用にもしない。"""
     window_end = today + timedelta(days=days)
     kept = []
     for row in rows:
         date_text = row[2]
         start, end = parse_date_range(date_text, today)
         if start is None:
-            # 「公開日しかないブログ記事」を開催イベントとして表示しない。
-            # 開催期間を取得できないイベントは、公開日を開催日として代用せず除外する。
-            source = row[0] or ""
-            published_date = row[3] or ""
-            if published_date and ("SHOP BLOG" in source or "ブログ" in source):
-                continue
-            kept.append(row)  # その他の情報源は従来どおり残す
+            # 「判断できないから残す」という旧安全策は廃止。
+            # 開催日を解析できない項目は表示対象から除外する。
             continue
         if end is None:
             end = start
-        if end >= today and start <= window_end:
+        if end < today:
+            # 終了済みイベントは表示しない。
+            continue
+        if start <= window_end:
             kept.append(row)
     return kept
 
 
 def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> tuple:
     """開催中・近日開催と開始前を分離する。
-    開催終了日が今日以降なら必ず開催中側に残す。開始前は開始日がsoon_days日を超えて先のものだけ。
-    「まだそれより先」のものに分ける。ページを分けて表示するために使う。
-    開始が近いイベントを「開始前」ページに埋もれさせず、早めに「開催中」ページ側で
-    目に触れるようにする（開始日ちょうどsoon_days日後までを含み、それより先は開始前ページへ）。
-    ただし映画は日付判定が不安定なため、カテゴリそのもので強制的に振り分ける
-    （🎬映画=上映中は常に開催中ページへ、🍿公開予定映画は常に開始前ページへ）。"""
+    開催日を解析できない項目と終了済み項目は表示しない。
+    映画カテゴリの振り分けは従来どおり維持する。"""
     started, upcoming = [], []
     soon_cutoff = today + timedelta(days=soon_days)
     for row in rows:
@@ -2762,22 +2756,25 @@ def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> t
         if "🎬 映画" in cats:
             started.append(row)
             continue
+
         start, end = parse_date_range(date_text, today)
         if start is None:
-            # 開催日不明は既存の情報を落とさないため開催中側に残す。
+            # 開催日を判断できないものは開催中側にも残さない。
+            continue
+        if end is None:
+            end = start
+        if end < today:
+            # 終了済みイベントは必ず除外する。
+            continue
+        if start <= today <= end:
             started.append(row)
             continue
-        if end is not None and end >= today:
-            # 今日まで/今日以降に終了するものは、開始済みなら開催中側。
-            if start <= today:
-                started.append(row)
-                continue
         if start > soon_cutoff:
             upcoming.append(row)
         else:
+            # 今日より後〜soon_days日以内は近日開催として開催中ページ側へ。
             started.append(row)
     return started, upcoming
-
 
 def infer_tags_from_source(source: str) -> list:
     """DBには生のtags(カテゴリタグ)は保存していないため、再分類時はsource名から推測する。
