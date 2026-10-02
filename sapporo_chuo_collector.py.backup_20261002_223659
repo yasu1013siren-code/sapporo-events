@@ -1,0 +1,3303 @@
+# -*- coding: utf-8 -*-
+r"""
+sapporo_chuo_collector_ver12.10.py
+==========================
+札幌市中央区の「飲食・アニメ・ポップアップ・音楽ライブ・映画」情報を毎日自動収集するツール。
+
+【できること】
+  - 複数の情報サイト＋商業施設公式サイトを巡回し、イベント/ライブ/ポップアップ情報を取得
+  - 飲食・アニメ・音楽ライブに関係する情報だけに自動で絞り込み
+  - 環境変数 GEMINI_API_KEY を設定していれば、Gemini AI(無料枠)がキーワードだけ
+    では判断しづらいケースも判定し、SNS/ブログにそのまま使える紹介文も生成する
+    （未設定の場合はこれまで通りキーワードのみで判定、動作に支障なし）
+  - これまでに集めた情報を SQLite DB に蓄積し、重複を自動で排除（URL単位）
+  - 実行するたびに data/index.html を更新 → ブラウザで見やすく確認できる
+  - 通知（メール/LINE/Slack等）は一切送信しない。ファイル更新のみ。
+
+【対象サイト（初期設定）】
+  1. サツイベ（札幌イベント情報マガジン）中央区ページ　※中央区限定
+     https://sapporo.magazine.events/area/chuou-ku
+     さっぽろオータムフェストのような大通公園の大型フェスも、開催が近づき
+     このサイトに掲載されればここで自動的に拾われます。
+  2. チ・カ・ホ（札幌駅前通地下広場）イベント一覧　※会場自体が中央区
+     https://www.sapporo-chikamichi.jp/event/
+  3. cube garden（中央区北2東3のライブハウス）LIVEスケジュール　※中央区限定
+     https://www.cube-garden.com/live.php
+  4. ウォーカープラス　札幌市の「ライブ・音楽イベント」　※市内広域
+     https://www.walkerplus.com/event_list/ar0101100/sapporo/eg0109/
+     ラルクアンシエルのようなメジャーアーティストの公演は、hitaru・Zepp
+     Sapporo・きたえーるなど中央区外の大規模会場で行われることが多いため、
+     この情報源だけは「札幌市内」全体を対象にしています。
+     ただし「音楽ライブ」カテゴリへの採用は、きたえーる/hitaru/Zepp Sapporo等の
+     大型会場名、または「全国ツアー」「ワンマン」等メジャー公演を示す語句を
+     含むものだけに絞っています（小規模ライブは対象外）。
+  5. ウォーカープラス　札幌市の「アニメ・ゲーム」イベント　※市内広域
+     https://www.walkerplus.com/event_list/ar0101100/sapporo/eg0127/
+     採用は「原画展」「POP UP」「コラボカフェ」等の展示・物販系のみに絞り、
+     声優イベント・上映会・舞台挨拶などは除外しています。
+  6. 札幌三越（中央区南1条西3）公式サイトの催事情報
+     https://www.mitsukoshi.mistore.jp/sapporo.html
+  7. 丸井今井札幌本店（中央区南1条西2）公式サイトの催事情報
+     https://www.maruiimai.mistore.jp/sapporo.html
+  7.5 サッポロファクトリー（中央区北2条東4丁目、大型複合商業施設）公式サイトの
+      イベント情報。デパートと同様「デパート催事」として扱う。
+     https://sapporofactory.jp/event/
+  8. 札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/
+     シアターキノ/TOHOシネマズすすきの。いずれも中央区）の上映中アニメ映画
+     https://press.moviewalker.jp/theater/108/
+  9. 札幌PARCO／札幌ステラプレイス／アピア　各公式サイトのポップアップ・
+     期間限定ショップ情報（ジャンル不問。POP UP/期間限定ショップ等と確認できるもの）
+  10. 大丸札幌店　公式SHOP BLOG（テナント各店のお知らせ記事一覧）
+      https://shopblog.dmdepart.jp/sapporo/
+      （大丸札幌店本体の「イベントカレンダー」はJavaScriptで動的生成されるため
+       引き続き取得できないが、SHOP BLOGは静的HTMLのため取得可能）
+  11. 狸小路商店街（moyuk SAPPORO含む）公式サイトの「ニュース&イベント」
+      https://tanukikoji.or.jp/news-event/
+
+  12. アニメ・漫画・ゲームの出版社/制作会社/作品系公式サイトを逆引きし、札幌開催の原画展・展覧会・POPUP等を取得。
+      SQUARE ENIX / 集英社 / アニプレックス / KADOKAWA / KADOKAWA Animation から開始し、
+      詳細ページの「会期/開催期間/開催日」と「会場/開催場所」を分離して取得する。
+
+  必要に応じて SOURCES 辞書に情報源を追加/削除してください。
+  カテゴリ判定の基準は CATEGORY_INCLUDE / CATEGORY_EXCLUDE で調整できます。
+
+【セットアップ】
+    py -m pip install requests beautifulsoup4 lxml
+
+【AI判定を使う場合（任意）】
+    環境変数 GEMINI_API_KEY にAPIキーを設定してください（クレジットカード不要の
+    無料枠で利用可能）。取得方法: https://aistudio.google.com/ → 「Get API key」
+    Windowsでの設定例:
+        setx GEMINI_API_KEY "取得したキー"
+    設定後はコマンドプロンプトを開き直してください。
+    設定しない場合は、これまで通りキーワードのみの判定で動作します。
+
+【実行】
+    py sapporo_chuo_collector.py
+
+  実行するたびに以下が更新されます:
+    - data/events.db      … 蓄積データベース（重複排除済み全件）
+    - data/index.html     … ★ブラウザで開いて確認するレポート（最新状態に上書き）
+    - data/new_YYYY-MM-DD.csv … その日新しく見つかった対象情報（Excel用）
+    - collector.log       … 実行ログ
+
+【毎日自動実行する方法】
+
+  ■ Windows（コマンド1つで登録・タスクスケジューラ）
+    コマンドプロンプトで以下を実行（パスは自分の環境に合わせて変更）。
+    毎朝7時に自動実行されるようになります。
+
+      schtasks /create /tn "SapporoChuoCollector" ^
+        /tr "py -3.14 C:\Users\user\Downloads\sapporo_chuo_collector.py" ^
+        /sc daily /st 07:00
+
+    確認:   schtasks /query /tn "SapporoChuoCollector"
+    削除:   schtasks /delete /tn "SapporoChuoCollector" /f
+
+  ■ Linux / macOS (cron)
+    crontab -e で以下を1行追加（毎朝7時の例）
+      0 7 * * * /usr/bin/python3 /path/to/sapporo_chuo_collector.py >> /path/to/collector.log 2>&1
+
+  自動実行後は、いつでも data/index.html をダブルクリックして
+  ブラウザで最新のイベント一覧を確認できます（通知は出ません）。
+"""
+
+import csv
+import json
+import logging
+import os
+import re
+import sqlite3
+import sys
+import time
+import unicodedata
+from dataclasses import dataclass, field
+from datetime import datetime, date, timedelta
+from pathlib import Path
+from typing import Iterable, Optional
+
+import requests
+from bs4 import BeautifulSoup
+
+# ----------------------------------------------------------------------------
+# 設定
+# ----------------------------------------------------------------------------
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(exist_ok=True)
+DB_PATH = DATA_DIR / "events.db"
+LOG_PATH = BASE_DIR / "collector.log"
+HTML_PATH = DATA_DIR / "index.html"
+UPCOMING_HTML_PATH = DATA_DIR / "upcoming.html"
+
+REQUEST_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; SapporoChuoCollector/1.0; +personal-use-script)"
+}
+REQUEST_TIMEOUT = 60
+REQUEST_INTERVAL_SEC = 1.5  # 相手サーバーへの配慮（連続アクセスの間隔）
+
+# 収集後にどのカテゴリに分類するか（かなり絞り込んだ基準）
+# CATEGORY_INCLUDE: これらの語句を含んでいれば、そのカテゴリの候補にする
+# CATEGORY_EXCLUDE: これらの語句を含んでいたら、候補から除外する
+CATEGORY_INCLUDE = {
+    "🎪 中心部のイベント情報": [
+        # 飲食系（従来の「飲食」カテゴリの内容はそのまま含む）
+        "グルメフェス", "フードフェス", "マルシェ", "物産展", "食べ歩き", "食べ比べ",
+        "スイーツイベント", "スイーツフェス", "デザートフェス", "ラーメンフェス", "肉フェス",
+        "餃子フェス", "ビアガーデン", "日本酒", "ワイン", "クラフトビール", "オータムフェスト", "雪まつり",
+        "コーヒーフェス", "コーヒーイベント", "コーヒーフェスティバル", "コーヒーペアリング", "カフェイベント", "カフェコラボ",
+        "期間限定カフェ", "ラテアート",
+        # 飲食以外の、中心部（大通・すすきの・駅前等）で行われる幅広いイベント
+        "花火大会", "花火", "サマーフェスティバル", "フェスティバル", "フェス",
+        "夏まつり", "夏祭り", "秋まつり", "秋祭り", "北海道マラソン", "パレード",
+        "イルミネーション", "ホワイトイルミネーション", "クリスマスマーケット",
+        "北海道神宮祭", "よさこいソーラン", "YOSAKOI",
+    ],
+    "🖼️ 展示会": [
+        # アニメ関連の展示会（従来通り）
+        "アニメ展示会", "アニメ原画展", "原画展", "複製原画展", "コラボカフェ",
+        # アニメに限らない、一般的な展示会・企画展
+        "展示会", "企画展", "特別展", "写真展", "美術展", "個展", "作品展",
+        "博物館", "美術館", "ギャラリー展",
+    ],
+    "🛍️ ポップアップストア": [
+        "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
+        "期間限定ショップ", "期間限定店", "期間限定ストア",
+        "POP UP SHOP", "POPUP SHOP", "POP UP STORE", "POPUP STORE",
+    ],
+    # アニメ・漫画・ゲーム系のPOPUPは、通常のポップアップストアとは
+    # 排他的に扱う。アニメ・ゲーム系に判定されたものは通常POPUPには表示しない。
+    "🎮 アニメ・ゲーム関連ポップアップストア": [
+        "POP UP", "POP-UP", "ポップアップ", "ポップアップストア",
+        "期間限定ショップ", "期間限定店", "期間限定ストア",
+        "POP UP SHOP", "POPUP SHOP", "POP UP STORE", "POPUP STORE",
+    ],
+    "🎵 音楽ライブ": [
+        "きたえーる", "hitaru", "Zepp Sapporo", "札幌ドーム", "真駒内セキスイハイムアイスアリーナ",
+        "全国ツアー", "アリーナツアー", "ドームツアー", "JAPAN TOUR", "TOUR", "ワンマン",
+    ],
+    "🎬 映画": ["映画上映中"],  # 中央区内の主要映画館で上映中の全作品（collect_movie_theaters()がタグ付け）
+    "🍿 公開予定映画": ["公開予定映画"],  # 2ヶ月以内に公開予定の映画（collect_upcoming_movies()がタグ付け）
+}
+
+CATEGORY_EXCLUDE = {
+    "🎪 中心部のイベント情報": ["レストラン", "居酒屋"],  # 普通の飲食店の宣伝は除外（"カフェ"は単体では除外しない。"カフェイベント"等の
+                                       # 具体的なイベント名だけを拾うようにしているため、単なるカフェの宣伝はそもそも
+                                       # INCLUDE側に一致しない設計）
+    "🖼️ 展示会": ["声優イベント", "アニメライブ"],
+    "🛍️ ポップアップストア": [],
+    "🎮 アニメ・ゲーム関連ポップアップストア": [],
+    "🎵 音楽ライブ": [
+        "オーケストラ", "クラシック", "交響楽団", "交響曲", "室内楽", "オペラ", "バレエ",
+        "吹奏楽", "合唱", "アンサンブル", "フィルハーモニー",
+    ],  # 邦楽・洋楽（ポップス/ロック等）のみを対象にし、クラシック系は除外
+}
+# デパート催事は内容キーワードではなく「情報源」で自動判定するカテゴリ（下のclassify()参照）
+DEPARTMENT_CATEGORY = "🏬 デパート催事"
+NON_EVENT_CATEGORY = "📣 キャンペーン・募集・ショップニュース"
+CATEGORY_ORDER = list(CATEGORY_INCLUDE.keys()) + [DEPARTMENT_CATEGORY]
+
+# ----------------------------------------------------------------------------
+# AI判定（Gemini API）設定
+# ----------------------------------------------------------------------------
+# 環境変数 GEMINI_API_KEY が設定されていれば自動的に有効になる。
+# 設定されていない場合は、これまで通りキーワードだけの判定で動作する
+# （AI無しでも問題なく使える設計）。
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = "gemini-3.5-flash"  # 安定版(GA)モデルを直接指定。
+# 以前は "gemini-flash-latest" というエイリアスを使っていたが、このエイリアスは
+# Google側の更新で中身が入れ替わることがあり、一時的にプレビュー版（レート制限が
+# 厳しく503/429エラーが出やすい）を指す期間があったため、個別の安定版モデル名を
+# 直接指定する方式に変更した。将来このモデルが廃止された場合は、Google公式の
+# モデル一覧 https://ai.google.dev/gemini-api/docs/models で後継の安定版
+# （Stableと明記されているもの）を確認し、ここを書き換えてください。
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+AI_ENABLED = bool(GEMINI_API_KEY)
+AI_REQUEST_INTERVAL_SEC = 4.5  # 無料枠のレート制限(1分あたりのリクエスト数)に配慮した間隔
+AI_TIMEOUT = 60
+AI_MAX_RETRIES = 2  # タイムアウト/一時的なエラー時の再試行回数
+
+AI_SYSTEM_PROMPT = """あなたは札幌市中央区の地域情報まとめサイト向けに、イベント情報を判定するアシスタントです。
+以下のイベント情報を読み、次のカテゴリのうち当てはまるものだけを選んでください（複数可、0個も可）。
+
+- 🎪 中心部のイベント情報: 中央区（大通・すすきの・駅前等）で行われる幅広いイベント。
+  グルメフェス、フードフェス、マルシェ、物産展、食べ歩き・食べ比べイベント、スイーツイベント、
+  ラーメン/肉/餃子フェス、ビアガーデン、日本酒・ワイン・クラフトビール系イベントに加え、
+  花火大会、夏祭り・秋祭り、パレード、イルミネーション、よさこいソーラン等、飲食に限らない
+  中心部の季節イベント・お祭り全般も含める。普通のレストラン・カフェ・居酒屋の宣伝は含めない。
+- 🖼️ 展示会: アニメの原画展、企画展、特別展、コラボカフェ、複製原画展、物販イベントに加え、
+  アニメに限らない一般的な展示会・企画展・特別展・写真展・美術展・個展も含める。
+  声優イベント、アニメライブ、上映会、映画、舞台挨拶は含めない。
+- 🛍️ ポップアップストア: ジャンルを問わず、POP UP/ポップアップストア/期間限定ショップ/
+  期間限定店/POP UP SHOP/LIMITED SHOP等の期間限定物販・ブランドショップ。
+  「札幌PARCO」「札幌ステラプレイス」「アピア」「大丸札幌店」「狸小路商店街」などのポップアップ専用・
+  ショップニュース情報源から取得した項目は、通常店舗の営業情報ではなく、期間限定販売・期間限定
+  ショップであることが確認できる場合に採用する。
+- 📣 キャンペーン・募集・ショップニュース: 百貨店・商業施設のカードキャンペーン、応募/募集、ポイント企画、ショップニュース、新商品・入荷案内など。これは「🏬 デパート催事」には含めない。
+- 🎵 音楽ライブ: きたえーる、hitaru、Zepp Sapporo、札幌ドーム、真駒内セキスイハイムアイスアリーナ等の
+  大型会場、または「全国ツアー」「ワンマン」等メジャー公演を示すもの。ジャンルは邦楽・洋楽(ポップス/ロック等)
+  のみ。オーケストラ・クラシック・吹奏楽・合唱・オペラ・バレエなどは含めない。小規模なライブハウス公演も含めない。
+
+必ず以下のJSON形式のみで回答してください（説明文や```は一切不要）:
+{"categories": ["🎪 中心部のイベント情報"], "blurb": "30文字程度の魅力が伝わる紹介文"}
+
+該当するカテゴリが無い場合は {"categories": [], "blurb": ""} としてください。
+blurbは、SNSやブログでそのまま使えるような、親しみやすい日本語の一文にしてください。"""
+
+
+def call_gemini(user_content: str) -> Optional[str]:
+    """Gemini APIを呼び出し、テキスト応答を返す。失敗時はNone（タイムアウト等は自動で再試行する）。"""
+    if not AI_ENABLED:
+        return None
+    last_error = None
+    for attempt in range(1, AI_MAX_RETRIES + 2):  # 初回 + 再試行
+        try:
+            resp = requests.post(
+                GEMINI_URL,
+                headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "system_instruction": {"parts": [{"text": AI_SYSTEM_PROMPT}]},
+                    "contents": [{"parts": [{"text": user_content}]}],
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 1024,
+                        # gemini-3.5-flash は既定で「思考」が有効で、思考に使うトークンも
+                        # maxOutputTokensの上限を共有するため、思考を無効化しないと
+                        # 肝心の回答本文が出力される前に上限に達して途中で切れてしまう。
+                        "thinkingConfig": {"thinkingBudget": 0},
+                    },
+                },
+                timeout=AI_TIMEOUT,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            last_error = e
+            if attempt <= AI_MAX_RETRIES:
+                # 429(リクエスト過多)/503(サーバー混雑)は一時的な混雑が原因のことが多いため、
+                # 通常のタイムアウト等より長めに待ってから再試行する。
+                status_code = getattr(getattr(e, "response", None), "status_code", None)
+                wait_sec = 20 if status_code in (429, 503) else 3
+                log.warning(f"Gemini API 呼び出し失敗(試行{attempt}回目、{wait_sec}秒待って再試行します): {e}")
+                time.sleep(wait_sec)
+            continue
+        finally:
+            time.sleep(AI_REQUEST_INTERVAL_SEC)
+    log.warning(f"Gemini API 呼び出し失敗(再試行含め断念): {last_error}")
+    return None
+
+
+def ai_judge(item: "EventItem"):
+    """AIにイベントを判定させ、(カテゴリ一覧, 紹介文) を返す。失敗時は (None, None)。"""
+    user_content = (
+        f"タイトル: {item.title}\n"
+        f"開催日: {item.date_text}\n"
+        f"場所: {item.place}\n"
+        f"情報源: {item.source}"
+    )
+    raw = call_gemini(user_content)
+    if raw is None:
+        return None, None
+    # ```json ... ``` で囲まれて返ってくることがあるため除去してからパース
+    cleaned = re.sub(r"^```(?:json)?|```$", "", raw.strip(), flags=re.MULTILINE).strip()
+    try:
+        parsed = json.loads(cleaned)
+        cats = [c for c in parsed.get("categories", []) if c in CATEGORY_INCLUDE]
+        blurb = str(parsed.get("blurb", ""))[:60]
+        return cats, blurb
+    except Exception as e:
+        log.warning(f"Gemini応答のJSON解析に失敗: {e} / 応答内容: {raw[:200]!r}")
+        return None, None
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_PATH, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class EventItem:
+    source: str
+    title: str
+    url: str
+    date_text: str = ""  # 開催期間のみ。記事公開日を入れない
+    published_date: str = ""  # 記事・ページの公開日/掲載日（開催判定には一切使用しない）
+    place: str = ""
+    fee: str = ""
+    tags: list = field(default_factory=list)
+    categories: list = field(default_factory=list)  # 判定後にセットされる
+    blurb: str = ""  # AI判定が有効な場合、紹介文がここに入る（副業での発信素材として利用可）
+    links: list = field(default_factory=list)  # 複数リンクがある場合(例:同じ映画が複数の映画館で上映)
+                                                 # [{"label": "劇場名", "url": "..."}, ...] の形式。
+                                                 # 空リストなら urlひとつだけをリンクとして扱う。
+
+
+# ----------------------------------------------------------------------------
+# 共通ユーティリティ
+# ----------------------------------------------------------------------------
+
+def fetch(url: str, retries: int = 2) -> Optional[BeautifulSoup]:
+    """URLを取得してBeautifulSoupオブジェクトを返す。失敗時はNone。
+    サーバー側の一時的なエラー(タイムアウトや500番台)に備え、自動で再試行する。"""
+    last_error = None
+    for attempt in range(1, retries + 2):  # 初回 + 再試行
+        try:
+            resp = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+            resp.raise_for_status()
+            # HTML / XML(RSS・Atom・サイトマップ等)を自動判別
+            content_type = (resp.headers.get("Content-Type") or "").lower()
+            sample = resp.content.lstrip()[:500].lower()
+            is_xml = (
+                "xml" in content_type
+                or url.lower().split("?")[0].endswith((".xml", ".rss", ".atom"))
+                or sample.startswith(b"<?xml")
+                or sample.startswith(b"<rss")
+                or sample.startswith(b"<feed")
+                or sample.startswith(b"<urlset")
+                or sample.startswith(b"<sitemapindex")
+            )
+            if is_xml:
+                # XMLはXMLパーサーで処理し、XMLParsedAsHTMLWarningを防止
+                return BeautifulSoup(resp.content, "xml")
+
+            # HTMLはrequestsのapparent_encodingに任せると、日本語サイトで誤判定することがある。
+            # 生バイトをBeautifulSoupへ渡し、meta charset / BOM等を含めて解析させる。
+            return BeautifulSoup(resp.content, "lxml")
+        except Exception as e:
+            last_error = e
+            if attempt <= retries:
+                time.sleep(3)
+            continue
+        finally:
+            time.sleep(REQUEST_INTERVAL_SEC)
+    log.warning(f"取得失敗(再試行含め断念): {url} ({last_error})")
+    return None
+
+
+
+
+# -----------------------------------------------------------------------------
+# URLリンク切れ自動修復
+# -----------------------------------------------------------------------------
+URL_REPAIR_ENABLED = True
+URL_REPAIR_MAX_PER_RUN = 40
+_url_repair_count = 0
+_url_repair_cache = {}
+
+def _registrable_domain(url: str) -> str:
+    """同一公式サイト判定用の簡易登録ドメイン。co.jp等の日本型TLDにも対応。"""
+    host = _domain_of(url)
+    parts = host.split(".")
+    if len(parts) >= 3 and parts[-2] in {
+        "co", "ne", "or", "ac", "go", "gr", "lg", "ed", "ad", "com", "net", "org"
+    } and parts[-1] in {"jp", "uk", "au", "nz", "kr"}:
+        return ".".join(parts[-3:])
+    if len(parts) >= 2:
+        return ".".join(parts[-2:])
+    return host
+
+def _url_status(url: str) -> tuple[int, str]:
+    """URLの状態を確認。戻り値は(status, 最終URL)。
+    404/410だけを「リンク切れ」として修復対象にし、403/429/5xxは触らない。"""
+    if not url:
+        return 0, url
+    if url in _url_repair_cache:
+        return _url_repair_cache[url]
+    try:
+        r = requests.get(url, headers=REQUEST_HEADERS, timeout=20, allow_redirects=True, stream=True)
+        status = r.status_code
+        final_url = r.url or url
+        r.close()
+        result = (status, final_url)
+    except Exception as e:
+        log.debug(f"URL確認失敗: {url} ({e})")
+        result = (0, url)
+    _url_repair_cache[url] = result
+    return result
+
+def _title_search_candidates(title: str, old_url: str, limit: int = 8) -> list[str]:
+    """同一公式ドメインに限定して、旧URLが404になった場合の新URL候補を探す。
+    DuckDuckGo HTML検索を使い、検索結果のリンク先が旧URLと同一登録ドメインの場合だけ採用する。"""
+    if not title or not old_url:
+        return []
+    from urllib.parse import quote_plus, urlparse
+    domain = _domain_of(old_url)
+    reg = _registrable_domain(old_url)
+    query = f'site:{domain} "{title}"'
+    search_url = "https://html.duckduckgo.com/html/?q=" + quote_plus(query)
+    try:
+        r = requests.get(search_url, headers=REQUEST_HEADERS, timeout=20)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.content, "lxml")
+    except Exception as e:
+        log.debug(f"URL再検索失敗: {title} ({e})")
+        return []
+
+    candidates = []
+    for a in soup.select("a.result__a[href], a[data-testid='result-title-a'][href]"):
+        href = a.get("href", "")
+        href = _absolute_url(search_url, href)
+        if not href.startswith("http"):
+            continue
+        h = _domain_of(href)
+        if _registrable_domain(href) != reg:
+            continue
+        # 検索結果自身のDuckDuckGo URLやログインページ等を除外
+        path = urlparse(href).path.lower()
+        if any(x in path for x in ["/login", "/search", "/account"]):
+            continue
+        if href not in candidates:
+            candidates.append(href)
+        if len(candidates) >= limit:
+            break
+    return candidates
+
+def _sitemap_candidates(title: str, old_url: str, limit: int = 20) -> list[str]:
+    """robots.txt / sitemap.xmlから同一サイトのURLを探す。"""
+    from urllib.parse import urljoin
+    base = f"https://{_domain_of(old_url)}"
+    sitemap_urls = [urljoin(base, "/sitemap.xml"), urljoin(base, "/robots.txt")]
+    locs = []
+    for su in sitemap_urls:
+        try:
+            r = requests.get(su, headers=REQUEST_HEADERS, timeout=15)
+            if r.status_code != 200:
+                continue
+            text = r.text
+            if su.endswith("robots.txt"):
+                for line in text.splitlines():
+                    if line.lower().startswith("sitemap:"):
+                        locs.append(line.split(":", 1)[1].strip())
+            else:
+                locs.append(su)
+        except Exception:
+            continue
+
+    title_terms = [x for x in re.split(r"[^0-9A-Za-zぁ-んァ-ヶ一-龯]+", normalize(title).lower()) if len(x) >= 2]
+    candidates = []
+    for sm in locs[:5]:
+        try:
+            r = requests.get(sm, headers=REQUEST_HEADERS, timeout=20)
+            if r.status_code != 200:
+                continue
+            soup = BeautifulSoup(r.content, "xml")
+            for loc in soup.find_all("loc"):
+                href = clean(loc.get_text())
+                if not href.startswith("http") or _registrable_domain(href) != _registrable_domain(old_url):
+                    continue
+                score = sum(1 for term in title_terms if term in href.lower())
+                if score:
+                    candidates.append((score, href))
+        except Exception:
+            continue
+    candidates.sort(key=lambda x: (-x[0], x[1]))
+    return [u for _score, u in candidates[:limit]]
+
+def migrate_repaired_db_url(conn: sqlite3.Connection, old_url: str, new_url: str) -> None:
+    """URL自動修復でURLが変わった場合、DBの旧URL主キーも新URLへ移行する。
+    新URLが既に存在する場合は旧行を削除して重複を防ぐ。"""
+    if not old_url or not new_url or old_url == new_url:
+        return
+    try:
+        old_row = conn.execute("SELECT url FROM events WHERE url = ?", (old_url,)).fetchone()
+        if old_row is None:
+            return
+        new_row = conn.execute("SELECT url FROM events WHERE url = ?", (new_url,)).fetchone()
+        if new_row is not None:
+            conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+            log.info(f"URL修復後の重複旧URLを削除: {old_url}")
+        else:
+            conn.execute("UPDATE events SET url = ? WHERE url = ?", (new_url, old_url))
+            log.info(f"DBのイベントURLを移行: {old_url} -> {new_url}")
+    except sqlite3.IntegrityError:
+        conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+
+def repair_event_url(item: EventItem) -> EventItem:
+    """イベントURLが404/410になっていたら、同一公式サイト内で新URLを自動発見して差し替える。
+    403/429/5xxやネットワーク障害ではURLを変更しない。
+    リダイレクト先が正常なら、その正規URLへ更新する。"""
+    global _url_repair_count
+    if not URL_REPAIR_ENABLED or not item.url or _url_repair_count >= URL_REPAIR_MAX_PER_RUN:
+        return item
+
+    # 既知の公式URL移転は検索に頼らず即時修復する。
+    known_url_aliases = {
+        "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/":
+            "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/",
+    }
+    alias = known_url_aliases.get(item.url.rstrip("/"))
+    if alias:
+        old = item.url
+        item.url = alias
+        log.info(f"既知URL移転を自動修復: {item.title} | {old} -> {alias}")
+        return item
+
+    status, final_url = _url_status(item.url)
+    if status in (200, 204):
+        if final_url and final_url != item.url and _domain_of(final_url) == _domain_of(item.url):
+            log.info(f"URLリダイレクトを正規化: {item.title} | {item.url} -> {final_url}")
+            item.url = final_url
+        return item
+    if status in (301, 302, 303, 307, 308):
+        if final_url and _registrable_domain(final_url) == _registrable_domain(item.url):
+            item.url = final_url
+        return item
+    if status not in (404, 410):
+        return item
+
+    _url_repair_count += 1
+    candidates = _sitemap_candidates(item.title, item.url)
+    candidates += _title_search_candidates(item.title, item.url)
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if _registrable_domain(candidate) != _registrable_domain(item.url):
+            continue
+        c_status, c_final = _url_status(candidate)
+        if c_status in (200, 204):
+            repaired = c_final or candidate
+            if _registrable_domain(repaired) != _registrable_domain(item.url):
+                continue
+            old = item.url
+            item.url = repaired
+            log.info(f"URLリンク切れを自動修復: {item.title} | {old} -> {repaired}")
+            return item
+    log.warning(f"URLリンク切れを検出したが自動修復できませんでした: {item.title} | {item.url}")
+    return item
+
+def clean(text: Optional[str]) -> str:
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize(text: str) -> str:
+    """全角英数字を半角に正規化（"Ｓａｐｐｏｒｏ" → "Sapporo" 等）"""
+    return unicodedata.normalize("NFKC", text or "")
+
+
+# 中央区外の会場でも「札幌市内」なら音楽ライブ/アニメ枠では許可する
+# （メジャーアーティストの公演は中央区外の大ホールで行われることが多いため）
+SAPPORO_VENUE_HINTS = [
+    "札幌", "北海道", "sapporo", "cube garden", "zepp", "hitaru", "きたえーる",
+    "penny lane", "ペニーレーン", "つどーむ", "きょうどーサッポロ",
+]
+
+
+def is_sapporo_venue(venue_text: str) -> bool:
+    v = normalize(venue_text).lower()
+    return any(hint in v for hint in SAPPORO_VENUE_HINTS)
+
+
+# ----------------------------------------------------------------------------
+# Ver.12: アニメ・漫画・ゲーム公式サイト「札幌逆引き」収集
+# ----------------------------------------------------------------------------
+# 施設側だけを巡回すると、作品公式サイトだけで告知された巡回展・原画展・
+# POPUPを取りこぼすため、作品/出版社/制作会社側の公式イベント一覧も逆引きする。
+# 「公開日」は掲載情報として保存するだけで、開催判定には絶対に使用しない。
+OFFICIAL_REVERSE_SOURCES = [
+    {
+        "name": "SQUARE ENIX",
+        "url": "https://web.jp.square-enix.com/calendar/",
+        "domain": "square-enix.com",
+    },
+    {
+        "name": "集英社",
+        "url": "https://www.shueisha.co.jp/news/event/",
+        "domain": "shueisha.co.jp",
+    },
+    {
+        "name": "講談社",
+        "url": "https://www.kodansha.co.jp/comic/campaigns",
+        "domain": "kodansha.co.jp",
+    },
+    {
+        "name": "小学館",
+        "url": "https://www.shogakukan.co.jp/news/event",
+        "domain": "shogakukan.co.jp",
+    },
+    {
+        "name": "アニプレックス",
+        "url": "https://www.aniplex.co.jp/event/",
+        "domain": "aniplex.co.jp",
+    },
+    {
+        "name": "KADOKAWA",
+        "url": "https://www.kadokawa.co.jp/topics/",
+        "domain": "kadokawa.co.jp",
+    },
+    {
+        "name": "KADOKAWA Animation",
+        "url": "https://kadokawa-animation.jp/",
+        "domain": "kadokawa-animation.jp",
+    },
+]
+
+OFFICIAL_EVENT_LINK_HINTS = [
+    "原画展", "展覧会", "展示会", "企画展", "特別展", "作品展", "資料展", "展",
+    "複製原画", "アート展", "記念展", "周年展", "museum", "exhibition",
+    "popup", "pop-up", "ポップアップ", "期間限定ショップ", "limited shop",
+    "イベント", "event", "フェア", "ショップ", "shop",
+]
+
+OFFICIAL_MEDIA_HINTS = [
+    "アニメ", "anime", "漫画", "マンガ", "コミック", "comic", "ゲーム", "game",
+    "キャラクター", "原作", "原画", "複製原画", "設定資料", "アートワーク",
+    "コミックス", "少年漫画", "青年漫画", "公式展", "公式イベント",
+]
+
+
+def _absolute_url(base_url: str, href: str) -> str:
+    from urllib.parse import urljoin
+    return urljoin(base_url, href or "")
+
+
+def _extract_published_date_from_soup(soup: BeautifulSoup) -> str:
+    """meta/time要素から記事公開日だけを抽出。開催日には流用しない。"""
+    if soup is None:
+        return ""
+    for attrs in [
+        {"property": "article:published_time"},
+        {"property": "og:article:published_time"},
+        {"name": "datePublished"},
+        {"itemprop": "datePublished"},
+    ]:
+        node = soup.find("meta", attrs=attrs)
+        if node and node.get("content"):
+            m = re.search(r"\d{4}[./\-]\d{1,2}[./\-]\d{1,2}", node.get("content", ""))
+            if m:
+                return m.group(0)
+    node = soup.find("time", attrs={"datetime": True})
+    if node:
+        dt = node.get("datetime", "")
+        m = re.search(r"\d{4}[./\-]\d{1,2}[./\-]\d{1,2}", dt)
+        if m:
+            return m.group(0)
+    return _extract_published_date_from_text(clean(" ".join(soup.stripped_strings)))
+
+
+def _extract_event_place_from_soup(soup: BeautifulSoup) -> str:
+    """会場/開催場所ラベルの値を優先して抽出する。"""
+    if soup is None:
+        return ""
+    labels = ["会場", "開催場所", "開催会場", "場所", "会場名"]
+    for label in labels:
+        node = soup.find(string=re.compile(rf"^\s*{re.escape(label)}\s*$"))
+        if node:
+            parent = node.parent
+            candidates = []
+            if parent:
+                candidates.append(clean(parent.get_text(" ", strip=True)))
+                for sib in list(parent.next_siblings)[:3]:
+                    candidates.append(clean(getattr(sib, "get_text", lambda *a, **k: str(sib))(" ", strip=True)))
+            for candidate in candidates:
+                candidate = re.sub(rf"^\s*{re.escape(label)}\s*[:：]?\s*", "", candidate)
+                if candidate and ("札幌" in candidate or "北海道" in candidate or is_sapporo_venue(candidate)):
+                    return candidate[:120]
+    # ラベル構造が崩れたサイト向け。札幌の会場名が出てくる短い文を拾う。
+    text = clean(" ".join(soup.stripped_strings))
+    for m in re.finditer(r"[^。\n]{0,80}(?:札幌|北海道)[^。\n]{0,100}", text):
+        candidate = clean(m.group(0))
+        if any(k in candidate for k in ["会場", "開催", "場所", "ホール", "店", "百貨店", "PARCO", "パルコ"]):
+            return candidate[:120]
+    return ""
+
+
+def _official_link_is_candidate(a, block_text: str) -> bool:
+    title = clean(a.get_text(" ", strip=True))
+    href = a.get("href", "") or ""
+    hay = normalize(f"{title} {href} {block_text}").lower()
+    return any(normalize(h).lower() in hay for h in OFFICIAL_EVENT_LINK_HINTS)
+
+
+
+# ----------------------------------------------------------------------------
+# Ver.12.2: 作品・展覧会「専用公式サイト」の自動発見
+# ----------------------------------------------------------------------------
+# 出版社/制作会社の公式ページからイベント詳細へ進んだ後、
+# 「公式サイト」「Official」「特設サイト」等の外部リンクを辿る。
+# これにより、毎回新しい「○○原画展公式」「○○展公式」をSOURCESへ手作業追加せず、
+# 作品単位の専用サイトを発見できる。
+OFFICIAL_SITE_LINK_HINTS = [
+    "公式サイト", "公式ページ", "特設サイト", "公式ホームページ", "official site",
+    "official website", "official", "特設ページ", "展覧会公式", "原画展公式",
+    "event site", "event website", "イベント公式",
+]
+
+OFFICIAL_SITE_TITLE_HINTS = [
+    "原画展", "展覧会", "展示会", "企画展", "特別展", "作品展", "資料展",
+    "複製原画", "アート展", "記念展", "周年展", "museum", "exhibition",
+    "popup", "pop-up", "ポップアップ", "期間限定ショップ", "イベント",
+]
+
+# 公式サイトとして許可する外部ドメインの傾向。SNS/検索/通販サイト等は除外する。
+OFFICIAL_SITE_BLOCKED_DOMAINS = {
+    "twitter.com", "x.com", "instagram.com", "facebook.com", "tiktok.com",
+    "youtube.com", "youtu.be", "amazon.co.jp", "rakuten.co.jp", "mercari.com",
+    "line.me", "t.co", "google.com", "maps.google.com",
+}
+
+
+def _domain_of(url: str) -> str:
+    from urllib.parse import urlparse
+    return (urlparse(url).netloc or "").lower().split(":")[0].removeprefix("www.")
+
+
+def _is_probable_official_site_url(url: str, parent_domain: str = "") -> bool:
+    """イベント詳細から見つけたリンクが「作品/展覧会専用公式サイト」らしいか判定。"""
+    d = _domain_of(url)
+    if not d or d in OFFICIAL_SITE_BLOCKED_DOMAINS:
+        return False
+    # 出版社・制作会社自身のドメインは専用サイトではない場合が多いので、
+    # ここでは「外部ドメイン」を優先。ただし同一ドメイン内の /event/ 等も許可する。
+    if d == parent_domain:
+        path = url.lower()
+        return any(k in path for k in ["event", "exhibition", "museum", "gengaten", "popup", "special", "campaign"])
+    # 汎用SNS/通販以外のドメインを候補にする。
+    return True
+
+
+def _discover_official_site_links(detail: BeautifulSoup, parent_url: str) -> list[tuple[str, str]]:
+    """イベント詳細ページから、専用公式サイト候補URLを抽出する。
+    戻り値: [(url, 根拠ラベル), ...]
+    """
+    if detail is None:
+        return []
+    parent_domain = _domain_of(parent_url)
+    found = []
+    seen = set()
+    for a in detail.find_all("a", href=True):
+        href = _absolute_url(parent_url, a.get("href"))
+        if not href.startswith("http"):
+            continue
+        label = clean(a.get_text(" ", strip=True))
+        parent = a.parent.get_text(" ", strip=True) if a.parent else ""
+        context = normalize(f"{label} {parent}").lower()
+        score = 0
+        if any(normalize(h).lower() in context for h in OFFICIAL_SITE_LINK_HINTS):
+            score += 20
+        # リンク先URLそのものが公式イベントサイトらしい場合も候補にする。
+        if any(normalize(h).lower() in href.lower() for h in OFFICIAL_SITE_TITLE_HINTS):
+            score += 8
+        if not score or not _is_probable_official_site_url(href, parent_domain):
+            continue
+        if href in seen:
+            continue
+        seen.add(href)
+        found.append((score, href, label or "公式サイトリンク"))
+    found.sort(key=lambda x: x[0], reverse=True)
+    return [(u, label) for _score, u, label in found[:8]]
+
+
+def _extract_official_site_event(detail: BeautifulSoup, source_name: str, site_url: str, parent_title: str = "") -> Optional[EventItem]:
+    """専用公式サイト1ページから札幌開催イベントを1件抽出する。"""
+    if detail is None:
+        return None
+    full_text = clean(" ".join(detail.stripped_strings))
+    if not full_text:
+        return None
+
+    # 札幌/北海道会場が明記されていることを必須にする。
+    if "札幌" not in full_text and not re.search(r"北海道.{0,160}(?:札幌|大丸|PARCO|パルコ|ステラ|ファクトリー|アニメイト)", full_text):
+        return None
+
+    date_text = _extract_event_period_from_soup(detail)
+    if not date_text:
+        # ラベル構造が特殊な専用サイト向けのフォールバック。
+        date_text = _parse_popup_date_text(full_text)
+    if not date_text:
+        # 公開日しかないページは絶対に採用しない。
+        return None
+
+    place = _extract_event_place_from_soup(detail)
+    if not place:
+        m = re.search(r"(?:大丸札幌店|札幌PARCO|札幌パルコ|札幌ステラプレイス|サッポロファクトリー|アニメイト札幌|三省堂書店\s*札幌店|札幌芸術の森)[^。\n]{0,80}", full_text)
+        place = clean(m.group(0)) if m else ""
+    if not place or not is_sapporo_venue(place + " " + full_text):
+        return None
+
+    title = ""
+    for selector in ["h1", "main h1", ".page-title", ".entry-title", "title"]:
+        node = detail.select_one(selector)
+        if node:
+            title = clean(node.get_text(" ", strip=True))
+            if title:
+                break
+    if not title:
+        title = parent_title
+    title = re.sub(r"\s*\|.*$", "", title).strip()
+    if len(title) < 3:
+        return None
+
+    published_date = _extract_published_date_from_soup(detail)
+    tags = ["作品・展覧会専用公式", "公式イベント", "公式逆引き収集"]
+    blob = normalize(f"{title} {full_text[:6000]}").lower()
+    if any(normalize(h).lower() in blob for h in OFFICIAL_MEDIA_HINTS):
+        tags.append("メディア系公式")
+    if any(normalize(h).lower() in blob for h in ["原画展", "展覧会", "展示会", "企画展", "特別展", "複製原画", "作品展"]):
+        tags.append("原画展・展示会公式")
+    if any(normalize(h).lower() in blob for h in ["popup", "pop-up", "ポップアップ", "期間限定ショップ"]):
+        tags.append("POPUP公式")
+
+    return EventItem(
+        source=f"専用公式サイト逆引き: {source_name}",
+        title=title[:120],
+        url=site_url,
+        date_text=date_text[:80],
+        published_date=published_date[:30],
+        place=place[:160],
+        tags=tags,
+    )
+
+
+def collect_discovered_official_sites(max_detail_sites: int = 40, max_discovered_sites: int = 30) -> Iterable[EventItem]:
+    """出版社/制作会社の公式イベント詳細ページから「専用公式サイト」を自動発見して巡回する。"""
+    discovered = []
+    seen_sites = set()
+
+    # まず既存の公式逆引き情報源から、札幌/展覧会候補の詳細URLを集める。
+    for source_cfg in OFFICIAL_REVERSE_SOURCES:
+        soup = fetch(source_cfg["url"])
+        if soup is None:
+            continue
+        candidates = []
+        for a in soup.find_all("a", href=True):
+            title = clean(a.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
+            block = a
+            block_text = title
+            for _ in range(3):
+                if block.parent is None:
+                    break
+                block = block.parent
+                txt = clean(block.get_text(" ", strip=True))
+                if len(txt) > len(block_text):
+                    block_text = txt
+                if len(block_text) > 600:
+                    break
+            if not _official_link_is_candidate(a, block_text):
+                continue
+            full_url = _absolute_url(source_cfg["url"], a.get("href"))
+            if source_cfg["domain"] not in full_url:
+                continue
+            score = (20 if "札幌" in block_text or "北海道" in block_text else 0)
+            score += 10 if any(normalize(h).lower() in normalize(title).lower() for h in OFFICIAL_SITE_TITLE_HINTS) else 0
+            candidates.append((score, full_url, title))
+        unique = {}
+        for score, url, title in sorted(candidates, reverse=True):
+            unique.setdefault(url, (score, title))
+        for url, (_score, title) in list(unique.items())[:max_detail_sites]:
+            detail = fetch(url)
+            if detail is None:
+                continue
+            for site_url, reason in _discover_official_site_links(detail, url):
+                d = _domain_of(site_url)
+                if d in seen_sites:
+                    continue
+                seen_sites.add(d)
+                discovered.append((source_cfg["name"], site_url, title, reason))
+                if len(discovered) >= max_discovered_sites:
+                    break
+            if len(discovered) >= max_discovered_sites:
+                break
+        if len(discovered) >= max_discovered_sites:
+            break
+
+    log.info(f"専用公式サイト自動発見: {len(discovered)}サイト")
+
+    for source_name, site_url, parent_title, reason in discovered:
+        site = fetch(site_url)
+        if site is None:
+            continue
+        item = _extract_official_site_event(site, source_name, site_url, parent_title)
+        if item:
+            item.tags.append(f"発見根拠:{reason}")
+            yield item
+
+
+def collect_official_anime_manga_game(max_links_per_source: int = 25) -> Iterable[EventItem]:
+    """Ver.12: 作品/出版社/制作会社の公式サイトから札幌開催イベントを逆引きする。
+
+    公式一覧ページ→イベント詳細ページの順で取得し、詳細ページに明記された
+    「会期/開催期間/開催日」と「会場/開催場所」を採用する。
+    ページの公開日は published_date にだけ保存し、開催判定には使用しない。
+    """
+    seen_detail_urls = set()
+    count = 0
+
+    for source_cfg in OFFICIAL_REVERSE_SOURCES:
+        index_url = source_cfg["url"]
+        source_name = source_cfg["name"]
+        soup = fetch(index_url)
+        if soup is None:
+            continue
+
+        candidates = []
+        for a in soup.find_all("a", href=True):
+            title = clean(a.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
+            # 親カードのテキストも加味することで、タイトルに「イベント」がなくても
+            # カード内に「原画展」「札幌」等があるケースを拾う。
+            block = a
+            block_text = title
+            for _ in range(3):
+                if block.parent is None:
+                    break
+                block = block.parent
+                candidate_text = clean(block.get_text(" ", strip=True))
+                if len(candidate_text) > len(block_text):
+                    block_text = candidate_text
+                if len(block_text) > 500:
+                    break
+            if not _official_link_is_candidate(a, block_text):
+                continue
+            full_url = _absolute_url(index_url, a.get("href"))
+            if not full_url.startswith("http") or full_url in seen_detail_urls:
+                continue
+            if source_cfg["domain"] not in full_url:
+                continue
+            # 直接「原画展/展覧会/POPUP」等を含むリンク、またはカード内に札幌を含むリンクを優先。
+            score = 0
+            title_lower = normalize(title).lower()
+            block_lower = normalize(block_text).lower()
+            if any(normalize(h).lower() in title_lower for h in OFFICIAL_EVENT_LINK_HINTS):
+                score += 10
+            if "札幌" in block_text or "北海道" in block_text:
+                score += 20
+            if any(normalize(h).lower() in block_lower for h in ["原画展", "展覧会", "展示会", "企画展", "複製原画", "ポップアップ", "popup"]):
+                score += 5
+            candidates.append((score, full_url, title, block_text))
+
+        # 同一URLをまとめ、一覧ページ内の重複カードを除去。
+        unique_candidates = []
+        seen_local = set()
+        for row in sorted(candidates, key=lambda x: x[0], reverse=True):
+            if row[1] in seen_local:
+                continue
+            seen_local.add(row[1])
+            unique_candidates.append(row)
+        unique_candidates = unique_candidates[:max_links_per_source]
+
+        log.info(f"公式逆引き[{source_name}]: 詳細候補 {len(unique_candidates)}件")
+
+        for _score, full_url, anchor_title, block_text in unique_candidates:
+            seen_detail_urls.add(full_url)
+            detail = fetch(full_url)
+            if detail is None:
+                continue
+
+            full_text = clean(" ".join(detail.stripped_strings))
+            # 札幌を明記していない全国イベントは対象外。
+            # 「北海道会場」＋札幌会場名の組み合わせも許可する。
+            if "札幌" not in full_text and not re.search(r"北海道.{0,120}(?:札幌|大丸|PARCO|パルコ|ステラ|ファクトリー)", full_text):
+                continue
+
+            date_text = _extract_event_period_from_soup(detail)
+            if not date_text:
+                # 公開日を開催日に誤認しないため、ラベル付き開催期間が取れないページは除外。
+                continue
+
+            place = _extract_event_place_from_soup(detail)
+            if not place:
+                # ページ内に札幌会場が明記されている場合は、タイトル/本文から補助的に取得。
+                m = re.search(r"(?:大丸札幌店|札幌PARCO|札幌パルコ|札幌ステラプレイス|サッポロファクトリー|アニメイト札幌|札幌芸術の森)[^。\n]{0,50}", full_text)
+                place = clean(m.group(0)) if m else ""
+            if not place or not is_sapporo_venue(place + " " + full_text[:2000]):
+                continue
+
+            title = ""
+            for selector in ["h1", "main h1", ".page-title", ".entry-title", "title"]:
+                node = detail.select_one(selector)
+                if node:
+                    title = clean(node.get_text(" ", strip=True))
+                    if title:
+                        break
+            if not title:
+                title = anchor_title
+            title = re.sub(r"\s*\|.*$", "", title).strip()
+            if len(title) < 3:
+                continue
+
+            published_date = _extract_published_date_from_soup(detail) or _extract_published_date_from_text(block_text)
+            tags = ["アニメ・漫画・ゲーム公式", "公式イベント", "公式逆引き収集"]
+            media_blob = normalize(f"{title} {full_text[:5000]}").lower()
+            if any(normalize(h).lower() in media_blob for h in OFFICIAL_MEDIA_HINTS):
+                tags.append("メディア系公式")
+
+            yield EventItem(
+                source=f"公式逆引き: {source_name}",
+                title=title[:120],
+                url=full_url,
+                date_text=date_text[:80],
+                published_date=published_date[:30],
+                place=place[:160],
+                tags=tags,
+            )
+            count += 1
+            if count >= max_links_per_source * len(OFFICIAL_REVERSE_SOURCES):
+                break
+
+    log.info(f"公式逆引き: 札幌開催候補 {count}件")
+
+
+DEPARTMENT_NON_EVENT_HINTS = [
+    "キャンペーン", "キャンペーン中", "プレゼントキャンペーン", "応募", "応募受付",
+    "大募集", "募集", "参加者募集", "エントリー", "申込受付", "申込み受付",
+    "手数料無料", "ポイントアップ", "ポイントプレゼント", "カード会員", "エムアイカード",
+    "クレジットカード", "分割払い", "送料無料", "ノベルティプレゼント",
+    "ショップニュース", "おすすめ商品", "新商品", "新作", "入荷", "再入荷",
+    "お買い得", "お買得", "セール", "フェア開催中", "開催中フェア",
+]
+
+DEPARTMENT_EVENT_HINTS = [
+    "催事", "物産展", "フェア", "マルシェ", "イベント", "展覧会", "展示会", "企画展",
+    "特別展", "原画展", "作品展", "販売会", "即売会", "市", "マーケット", "フェス",
+    "POP UP", "POP-UP", "POPUP", "ポップアップ", "期間限定ショップ", "期間限定店",
+]
+
+def detect_non_event_store_info(item: EventItem) -> bool:
+    """百貨店・商業施設の「催事」情報源に混ざるキャンペーン/募集/ショップニュースを判定。
+    イベント・展示・POPUPとして明確なタイトルは除外対象にしない。"""
+    text = normalize(f"{item.title} {item.place} {' '.join(item.tags)}").lower()
+    title = normalize(item.title or "").lower()
+    non_event = any(normalize(h).lower() in text for h in DEPARTMENT_NON_EVENT_HINTS)
+    if not non_event:
+        return False
+    # 明確なイベント/展示/POPUPタイトルなら通常のイベント分類を優先
+    event_title = any(normalize(h).lower() in title for h in DEPARTMENT_EVENT_HINTS)
+    # 「キャンペーン」と「フェア」のように両方含む場合は、催事として成立するケースもあるため
+    # キャンペーン語がタイトルの主目的である場合のみ非イベント扱いにする。
+    strong_non_event = any(normalize(h).lower() in title for h in [
+        "キャンペーン", "応募", "大募集", "募集", "エントリー", "手数料無料", "ポイントアップ",
+        "カード会員", "エムアイカード", "分割払い", "送料無料", "ショップニュース",
+        "おすすめ商品", "新商品", "新作", "入荷", "再入荷", "お買い得", "お買得",
+    ])
+    return strong_non_event or (non_event and not event_title)
+
+
+def enforce_category_rules(categories: list) -> list:
+    """カテゴリ間の排他ルールを最後に適用する。
+    アニメ・ゲーム関連POPUPは通常POPUPへ重複表示しない。
+    AI判定後にも必ず呼び出す。
+    """
+    cats = list(dict.fromkeys(c for c in (categories or []) if c))
+    if "🎮 アニメ・ゲーム関連ポップアップストア" in cats:
+        cats = [c for c in cats if c != "🛍️ ポップアップストア"]
+    if NON_EVENT_CATEGORY in cats:
+        cats = [c for c in cats if c != DEPARTMENT_CATEGORY]
+    return cats
+
+
+def classify(item: EventItem) -> list:
+    """タイトル＋会場名＋タグから、飲食/音楽ライブ/アニメ/ポップアップ のどれに該当するか判定
+    （かなり絞り込んだキーワード基準。デパート催事はタグで別途判定）"""
+    # 情報源名はカテゴリ判定の本文には入れない。
+    # 「札幌PARCO(ポップアップ)」のようなsource名だけで、無関係な記事が
+    # POPUPカテゴリへ入る事故を防ぐ。判定材料はタイトル・会場・明示タグ。
+    haystack = normalize(f"{item.title} {item.place} {' '.join(item.tags)}")
+    is_non_event_store_info = detect_non_event_store_info(item)
+    haystack_lower = haystack.lower()
+    popup_title_key = re.sub(r"\s+", "", normalize(item.title or "")).lower()
+    popup_false_positive_titles = {
+        "イベント・ポップアップ", "イベント ポップアップ", "イベント&ポップアップ",
+        "イベント／ポップアップ", "イベント/ポップアップ",
+    }
+    matched = []
+    for label, includes in CATEGORY_INCLUDE.items():
+        # POPUPカテゴリでは、タグや情報源名だけでなく実タイトルにPOPUP表現があることを優先。
+        category_haystack_lower = haystack_lower
+        if label in ("🛍️ ポップアップストア", "🎮 アニメ・ゲーム関連ポップアップストア"):
+            category_haystack_lower = normalize(f"{item.title} {item.place}").lower()
+            if popup_title_key in popup_false_positive_titles:
+                continue
+        if any(normalize(inc).lower() in category_haystack_lower for inc in includes):
+            # アニメ・ゲーム関連POPUPは、単なる「POP UP」という語だけでは入れず、
+            # 下の共通メディア判定でアニメ/ゲーム関連であることを確認してから追加する。
+            if label == "🎮 アニメ・ゲーム関連ポップアップストア":
+                continue
+            excludes = CATEGORY_EXCLUDE.get(label, [])
+            if any(exc in haystack for exc in excludes):
+                continue
+            matched.append(label)
+    if "デパート催事" in item.tags:
+        if is_non_event_store_info:
+            if NON_EVENT_CATEGORY not in matched:
+                matched.append(NON_EVENT_CATEGORY)
+        else:
+            matched.append(DEPARTMENT_CATEGORY)
+
+    if is_non_event_store_info and any(k in (item.source or "") for k in ["催事", "SHOP BLOG", "ショップニュース"]):
+        matched = [c for c in matched if c != DEPARTMENT_CATEGORY]
+        if NON_EVENT_CATEGORY not in matched:
+            matched.append(NON_EVENT_CATEGORY)
+
+    # アニメ・ゲーム・漫画の展示/POPUPは情報源によって表記揺れが大きいため、
+    # 情報源をまたいだ共通ルールで補完する。
+    media_hints = [
+        "アニメ", "anime", "漫画", "マンガ", "コミック", "comic", "ゲーム", "game",
+        "キャラクター", "キャラ", "原作", "原画", "複製原画", "設定資料", "アートワーク",
+        "作品展", "アニメ化", "コミックス", "単行本", "少年漫画", "青年漫画",
+    ]
+    # 作品名そのものに「アニメ/ゲーム」という語が入らないPOPUPを拾うための
+    # 代表的なIP/ブランド名。必要に応じて追加できる。
+    media_ip_hints = [
+        "ちいかわ", "呪術廻戦", "鬼滅の刃", "ONE PIECE", "ワンピース", "ハイキュー",
+        "ブルーロック", "僕のヒーローアカデミア", "ヒロアカ", "チェンソーマン", "進撃の巨人",
+        "銀魂", "NARUTO", "ナルト", "BLEACH", "ブリーチ", "名探偵コナン", "ガンダム",
+        "ポケモン", "Pokémon", "原神", "崩壊：スターレイル", "崩壊スターレイル", "Fate",
+        "ウマ娘", "あんさんぶるスターズ", "あんスタ", "ヒプノシスマイク", "初音ミク",
+        "サンリオ", "すみっコぐらし", "ドラえもん", "クレヨンしんちゃん", "プリキュア",
+        "ちびまる子ちゃん", "名探偵コナン", "鋼の錬金術師", "黄泉のツガイ", "SPY×FAMILY",
+        "スパイファミリー", "薬屋のひとりごと", "推しの子", "東京リベンジャーズ",
+        "カービィ", "ゼルダの伝説", "スプラトゥーン", "マリオ", "どうぶつの森",
+        "ファイナルファンタジー", "FINAL FANTASY", "ドラゴンクエスト", "ペルソナ",
+        "モンスターハンター", "ストリートファイター", "原神", "アークナイツ", "ブルアカ",
+    ]
+    exhibition_hints = [
+        "展示", "展示会", "展覧会", "企画展", "特別展", "原画展", "複製原画展",
+        "資料展", "作品展", "展",
+    ]
+    popup_hints = [
+        "popup", "pop-up", "pop up", "ポップアップ",
+        "期間限定ショップ", "期間限定店", "期間限定ストア",
+        "limited shop", "limited store",
+    ]
+    media_text = normalize(f"{item.title} {item.place} {item.source} {' '.join(item.tags)}").lower()
+    # POPUPそのものの判定はsource名を使わず、タイトル・タグだけを見る。
+    # sourceに「ポップアップ」と入っているだけではPOPUPとはみなさない。
+    popup_text = normalize(item.title or "").lower()
+    has_media = any(h.lower() in media_text for h in media_hints) or any(
+        h.lower() in media_text for h in media_ip_hints
+    ) or any(
+        marker in media_text for marker in ["公式逆引き", "アニメ・漫画・ゲーム公式", "メディア系公式"]
+    )
+    if has_media and any(h.lower() in media_text for h in exhibition_hints):
+        if "🖼️ 展示会" not in matched:
+            matched.append("🖼️ 展示会")
+    is_popup_false_positive = popup_title_key in {re.sub(r"\s+", "", x).lower() for x in popup_false_positive_titles}
+    # タグだけでPOPUPとは確定しない。古いコレクターが付けた
+    # 「POPUP専用ソース」タグで一般催事が混入するのを防ぐ。
+    has_popup = (not is_popup_false_positive) and any(h.lower() in popup_text for h in popup_hints)
+
+    # 「アニメ・ゲーム関連POPUP」は、タイトルだけでなく情報源/タグも判定材料にする。
+    # これにより作品名に「アニメ」「ゲーム」が入っていない
+    # （例: 作品名だけのPOPUP）ケースでも、公式逆引きやアニメ専用情報源から拾える。
+    media_source = any(marker in media_text for marker in [
+        "アニメ・漫画・ゲーム公式", "アニメ・漫画系", "ウォーカープラス(アニメ)",
+        "作品・展覧会専用公式", "メディア系公式",
+    ])
+
+    # POPUPカテゴリは排他的にする。
+    # 「POPUP専用ソース」だけではアニメ・ゲーム系とは判定しない。
+    # 作品名/IP名、明示的なアニメ・漫画・ゲーム情報源など、別の根拠が必要。
+    if has_popup and (has_media or media_source):
+        # アニメ・ゲーム関連POPUPは通常POPUPから外し、こちらだけに入れる。
+        matched = [c for c in matched if c != "🛍️ ポップアップストア"]
+        if "🎮 アニメ・ゲーム関連ポップアップストア" not in matched:
+            matched.append("🎮 アニメ・ゲーム関連ポップアップストア")
+    elif has_popup:
+        # 一般POPUPは通常カテゴリのみ。
+        if "🛍️ ポップアップストア" not in matched:
+            matched.append("🛍️ ポップアップストア")
+    return enforce_category_rules(matched)
+
+
+# ----------------------------------------------------------------------------
+# 情報源ごとの取得処理
+# ----------------------------------------------------------------------------
+
+def get_nearby_category_tags(anchor) -> list:
+    """イベントカードの近くにあるカテゴリタグ（/category/xxx へのリンク）を拾う。
+    ページ下部のカテゴリ一覧ナビ（数十件）を誤って拾わないよう、
+    近い階層で見つかった小さめのリンク集合だけを採用する。"""
+    depth = 0
+    node = anchor
+    while node is not None and depth < 6:
+        node = node.parent
+        depth += 1
+        if node is None:
+            break
+        cat_links = node.find_all("a", href=re.compile(r"/category/[\w-]+/?$"))
+        if 0 < len(cat_links) <= 6:
+            return [clean(c.get_text()) for c in cat_links]
+    return []
+
+
+def collect_satsuibe(max_pages: int = 6) -> Iterable[EventItem]:
+    """サツイベ 中央区ページを巡回して取得"""
+    base = "https://sapporo.magazine.events/area/chuou-ku"
+    seen_urls = set()
+
+    for page in range(1, max_pages + 1):
+        url = base if page == 1 else f"{base}/page/{page}"
+        soup = fetch(url)
+        if soup is None:
+            break
+
+        links = soup.find_all("a", href=re.compile(r"/(area|category)/[\w-]+/\d+\.html$"))
+        if not links:
+            log.info(f"サツイベ: {page}ページ目でリンクが見つからず終了")
+            break
+
+        found_this_page = 0
+        for a in links:
+            href = a.get("href", "")
+            if href in seen_urls:
+                continue
+            seen_urls.add(href)
+
+            title = clean(a.get("title")) or clean(a.get_text(" ", strip=True))[:80]
+            block_text = clean(a.get_text(" ", strip=True))
+
+            date_m = re.search(r"開催日\s*([^\s].*?)(?=場所|参加料|$)", block_text)
+            place_m = re.search(r"場所\s*([^\s].*?)(?=参加料|$)", block_text)
+            fee_m = re.search(r"参加料\s*([^\s].*?)(?=$)", block_text)
+            tags = get_nearby_category_tags(a)
+
+            item = EventItem(
+                source="サツイベ(中央区)",
+                title=title,
+                url=href,
+                date_text=clean(date_m.group(1))[:60] if date_m else "",
+                place=clean(place_m.group(1))[:60] if place_m else "",
+                fee=clean(fee_m.group(1))[:40] if fee_m else "",
+                tags=tags,
+            )
+            found_this_page += 1
+            yield item
+
+        log.info(f"サツイベ: {page}ページ目 {found_this_page}件")
+        if found_this_page == 0:
+            break
+
+
+def collect_chikaho() -> Iterable[EventItem]:
+    """チ・カ・ホ（札幌駅前通地下広場）イベント一覧。会場自体が中央区。"""
+    url = "https://www.sapporo-chikamichi.jp/event/"
+    soup = fetch(url)
+    if soup is None:
+        return
+
+    links = soup.find_all("a", href=True)
+    count = 0
+    for a in links:
+        href = a["href"]
+        title = clean(a.get_text(" ", strip=True))
+        if not title or len(title) < 4:
+            continue
+        if not re.search(r"/event/.+", href):
+            continue
+        if href.rstrip("/").endswith("/event"):
+            continue
+        full_url = href if href.startswith("http") else f"https://www.sapporo-chikamichi.jp{href}"
+        count += 1
+        yield EventItem(
+            source="チ・カ・ホ",
+            title=title[:80],
+            url=full_url,
+            place="チ・カ・ホ（札幌駅前通地下広場）",
+        )
+    log.info(f"チ・カ・ホ: {count}件")
+
+
+def collect_cube_garden() -> Iterable[EventItem]:
+    """cube garden（中央区のライブハウス）のLIVEスケジュール。
+    小規模ライブハウスのため、タイトルに全国ツアー等メジャー公演を示す語句が
+    含まれる場合のみ後段のclassify()で音楽ライブ扱いになる（強制タグ付けはしない）。"""
+    url = "https://www.cube-garden.com/live.php"
+    soup = fetch(url)
+    if soup is None:
+        return
+
+    count = 0
+    candidates = soup.find_all(["a", "h2", "h3", "dt", "li"])
+    for el in candidates:
+        text = clean(el.get_text(" ", strip=True))
+        if not text or len(text) < 4 or len(text) > 120:
+            continue
+        if not re.search(r"\d{1,2}[/月.\-]\d{1,2}", text):
+            continue
+        href = el.get("href") if el.name == "a" else None
+        full_url = href if (href and href.startswith("http")) else url
+        count += 1
+        yield EventItem(
+            source="cube garden(ライブ)",
+            title=text[:80],
+            url=full_url,
+            place="cube garden（札幌市中央区）",
+        )
+    log.info(f"cube garden: {count}件（日付らしき記載がある行のみ抽出。要目視確認）")
+
+
+def parse_walkerplus_listing(soup: BeautifulSoup):
+    """ウォーカープラスのイベント一覧ページを解析し、(タイトル, URL, 公演日, 会場) のリストを返す。
+    DOMのクラス名には依存せず、「タイトル → 日付 → … → "北海道" → 区名 → 会場名」
+    というテキストの並び順だけを頼りに抽出する。"""
+    date_re = re.compile(r"\d{4}年\d{1,2}月\d{1,2}日\([月火水木金土日]\)(?:[・〜~][0-9]{1,2}日\([月火水木金土日]\))?")
+    # イベント詳細へのリンク（タイトル→URL の対応づけ用）
+    event_links = {}
+    for a in soup.find_all("a", href=re.compile(r"/event/ar\d+e\d+/?$")):
+        t = clean(a.get_text())
+        if t and t not in event_links:
+            event_links[t] = a["href"]
+
+    strings = list(soup.stripped_strings)
+    n = len(strings)
+    results = []
+    for i, s in enumerate(strings):
+        if s != "北海道" or i + 2 >= n:
+            continue
+        ward = strings[i + 1]
+        venue = strings[i + 2]
+        title, date_text = "", ""
+        for back in range(1, 5):
+            idx = i - back
+            if idx < 0:
+                break
+            m = date_re.search(strings[idx])
+            if m:
+                date_text = m.group(0)
+                if idx - 1 >= 0:
+                    title = strings[idx - 1]
+                break
+        if title and date_text and len(title) <= 100:
+            href = event_links.get(title, "")
+            results.append((title, href, date_text, f"{ward} {venue}"))
+    return results
+
+
+def collect_walkerplus_live(max_pages: int = 3) -> Iterable[EventItem]:
+    """ウォーカープラス 札幌市の「ライブ・音楽イベント」。
+    メジャー会場名／全国ツアー等の語句を含むものだけ、後段のclassify()で採用される。"""
+    base = "https://www.walkerplus.com/event_list/ar0101100/sapporo/eg0109/"
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = base if page == 1 else f"{base}{page}.html"
+        soup = fetch(url)
+        if soup is None:
+            break
+        items = parse_walkerplus_listing(soup)
+        if not items:
+            break
+        for title, href, date_text, place in items:
+            full_url = f"https://www.walkerplus.com{href}" if href.startswith("/") else (href or url)
+            count += 1
+            yield EventItem(
+                source="ウォーカープラス(音楽)",
+                title=clean(title)[:80],
+                url=full_url,
+                date_text=clean(date_text)[:40],
+                place=clean(place)[:60],
+            )
+    log.info(f"ウォーカープラス(音楽): {count}件チェック（メジャー会場/ツアー語句一致のみ後で採用）")
+
+
+def collect_walkerplus_anime(max_pages: int = 3) -> Iterable[EventItem]:
+    """ウォーカープラス 札幌市の「アニメ・ゲーム」イベント。
+    原画展/POP UP等の展示・物販系語句を含むものだけ、後段のclassify()で採用される。"""
+    base = "https://www.walkerplus.com/event_list/ar0101100/sapporo/eg0127/"
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = base if page == 1 else f"{base}{page}.html"
+        soup = fetch(url)
+        if soup is None:
+            break
+        items = parse_walkerplus_listing(soup)
+        if not items:
+            break
+        for title, href, date_text, place in items:
+            full_url = f"https://www.walkerplus.com{href}" if href.startswith("/") else (href or url)
+            count += 1
+            yield EventItem(
+                source="ウォーカープラス(アニメ)",
+                title=clean(title)[:80],
+                url=full_url,
+                date_text=clean(date_text)[:40],
+                place=clean(place)[:60],
+            )
+    log.info(f"ウォーカープラス(アニメ): {count}件チェック（原画展/POP UP等の語句一致のみ後で採用）")
+
+
+def parse_department_store_top_page(soup: BeautifulSoup):
+    """百貨店公式サイトのトップページから「タイトル＋開催期間」の並びを抽出する。
+    例: "秋はじめ スイーツ&グルメ 第1弾" の直後に "8月19日(水) ～ 8月31日(月)" が続く、
+    という並び順だけを頼りに、DOM構造に依存せず抽出する。"""
+    strings = list(soup.stripped_strings)
+    date_pattern = re.compile(r"\d{1,2}月\d{1,2}日")
+    items = []
+    for i, s in enumerate(strings):
+        if date_pattern.search(s) and len(s) <= 40 and i >= 1:
+            title = strings[i - 1]
+            if title and 3 <= len(title) <= 60 and not date_pattern.search(title):
+                items.append((title, s))
+    return items
+
+
+def collect_mitsukoshi() -> Iterable[EventItem]:
+    """札幌三越（中央区南1条西3）公式サイトの催事情報"""
+    url = "https://www.mitsukoshi.mistore.jp/sapporo.html"
+    soup = fetch(url)
+    if soup is None:
+        return
+    count = 0
+    for title, date_text in parse_department_store_top_page(soup):
+        count += 1
+        yield EventItem(
+            source="札幌三越(催事)",
+            title=clean(title)[:80],
+            url=url,
+            date_text=clean(date_text)[:40],
+            place="札幌三越",
+            tags=["デパート催事"],
+        )
+    log.info(f"札幌三越(催事): {count}件")
+
+
+def collect_maruiimai() -> Iterable[EventItem]:
+    """丸井今井札幌本店（中央区南1条西2）公式サイトの催事情報"""
+    url = "https://www.maruiimai.mistore.jp/sapporo.html"
+    soup = fetch(url)
+    if soup is None:
+        return
+    count = 0
+    for title, date_text in parse_department_store_top_page(soup):
+        count += 1
+        yield EventItem(
+            source="丸井今井札幌本店(催事)",
+            title=clean(title)[:80],
+            url=url,
+            date_text=clean(date_text)[:40],
+            place="丸井今井札幌本店",
+            tags=["デパート催事"],
+        )
+    log.info(f"丸井今井札幌本店(催事): {count}件")
+
+
+def collect_sapporo_factory() -> Iterable[EventItem]:
+    """サッポロファクトリー（中央区北2条東4丁目、大型複合商業施設）公式サイトの
+    イベント情報。ページ末尾に「カテゴリ 日付 タイトル」を1本のテキストにまとめた
+    リンク一覧があるため、そこから正規表現で日付部分とタイトル部分を切り分けて抽出する。
+    デパート同様、情報源そのものを「デパート催事」として扱う（催事場に限らずアトリウムや
+    館内各所でのイベント・ポップアップショップ・キャンペーン等をまとめて対象にする）。"""
+    url = "https://sapporofactory.jp/event/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    # 日付らしき文字（数字・年月日・曜日・区切り記号）が続く限り「日付」とみなし、
+    # それ以外の文字（かな漢字等）が現れた時点をタイトルの開始位置とする簡易パーサー。
+    date_run = re.compile(r"[0-9年月日祝土日火水木金/\-\(\)（）～〜・:.\u3000 ]+")
+    seen_urls = set()
+    count = 0
+    for a in soup.select('a[href*="/event/detail/"]'):
+        href = a.get("href", "")
+        if not href:
+            continue
+        full_url = href if href.startswith("http") else f"https://sapporofactory.jp{href}"
+        if full_url in seen_urls:
+            continue
+        text = clean(a.get_text(" ", strip=True))
+        # 「2026年」「2026/9/12」のような本物の日付の始まりだけを対象にする。
+        # ページ内にはカレンダー表側（タイトルのみで日付情報を持たないリンク）と
+        # 下部一覧側（カテゴリ+日付+タイトルがまとまったリンク）の2種類が同じURLで
+        # 存在するため、単に「最初の数字」で判定すると表側の方を誤って拾ってしまう
+        # （例:タイトル中の「第20回」の「20」を日付と誤認する）ことがあるための対策。
+        m = re.search(r"\d{4}[年/]", text)
+        if not m:
+            continue
+        date_start = m.start()
+        date_match = date_run.match(text[date_start:])
+        if not date_match:
+            continue
+        date_text = text[date_start:date_start + date_match.end()].strip()
+        title = text[date_start + date_match.end():].strip()
+        if not title or len(title) < 3:
+            continue
+        seen_urls.add(full_url)
+        count += 1
+        yield EventItem(
+            source="サッポロファクトリー(催事)",
+            title=title[:80],
+            url=full_url,
+            date_text=date_text[:40],
+            place="サッポロファクトリー",
+            tags=["デパート催事"],
+        )
+    log.info(f"サッポロファクトリー(催事): {count}件")
+
+
+
+def _extract_published_date_from_text(text: str) -> str:
+    """記事本文・一覧カードなどから公開日/掲載日らしき日付を抽出する。
+    これは公開日として保存するだけで、開催日(date_text)には絶対に使用しない。"""
+    text = clean(text)
+    patterns = [
+        r"(?:公開日|掲載日|投稿日|投稿日時|更新日|公開|掲載)\s*[:：]?\s*(\d{4}[./\-]\d{1,2}[./\-]\d{1,2})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def _extract_event_period_from_text(text: str) -> str:
+    """本文から「会期/イベント期間/開催期間」等に続く開催期間だけを抽出する。
+    公開日が本文の先頭にあっても、それを開催日として採用しない。"""
+    text = clean(text)
+    date_part = r"(?:\d{4}[./\-]\d{1,2}[./\-]\d{1,2}|\d{4}年\d{1,2}月\d{1,2}日?|\d{1,2}月\d{1,2}日?|\d{1,2}/\d{1,2})(?:\s*[（(][^）)]*[）)])?"
+    range_sep = r"[～〜~\-→➝➜]"
+    range_re = rf"{date_part}(?:\s*{range_sep}\s*(?:{date_part}))?"
+    patterns = [
+        rf"(?:イベント期間|イベント期間\s*|会期|開催期間|開催日程|開催日時|開催日)\s*[:：]?\s*({range_re})",
+        rf"(?:期間)\s*[:：]\s*({range_re})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text, flags=re.I)
+        if m:
+            return m.group(1).strip()
+    return ""
+
+
+def _extract_event_period_from_soup(soup: BeautifulSoup) -> str:
+    """詳細ページのラベル付き開催期間を最優先で取得する。"""
+    if soup is None:
+        return ""
+    # まず「イベント期間」「会期」などのラベル周辺だけを見る。
+    for label in ["イベント期間", "会期", "開催期間", "開催日程", "開催日時", "開催日"]:
+        node = soup.find(string=re.compile(rf"^\s*{re.escape(label)}\s*$"))
+        if node:
+            parent = node.parent
+            block = clean(parent.get_text(" ", strip=True)) if parent else ""
+            result = _extract_event_period_from_text(f"{label} {block}")
+            if result:
+                return result
+            # ラベルと値が別要素の場合は次の兄弟/親ブロックも確認。
+            if parent:
+                for sib in list(parent.next_siblings)[:3]:
+                    txt = clean(getattr(sib, "get_text", lambda *a, **k: str(sib))(" ", strip=True))
+                    result = _extract_event_period_from_text(f"{label} {txt}")
+                    if result:
+                        return result
+    return _extract_event_period_from_text(clean(" ".join(soup.stripped_strings)))
+
+
+def _parse_popup_date_text(text: str) -> str:
+    """ポップアップ本文から開催期間らしい日付文字列を抽出する。"""
+    text = clean(text)
+    patterns = [
+        r"\d{4}[年/.\-]\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{4}[年/.\-]?\d{1,2}[月/.\-]\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{4}年\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+        r"\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?\s*(?:[～〜~\-→➝➜]\s*\d{1,2}月\d{1,2}日?(?:\s*[（(][月火水木金土日祝][）)])?)?",
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            return m.group(0)[:60]
+    return ""
+
+
+# PARCO/ステラプレイス/アピアの各ポップアップ収集関数に共通する、
+# 「イベントではなくサイト内ナビゲーション（言語切替・フロア案内等）のリンクを
+# 誤って拾ってしまう」問題への対策。<a>タグの祖先にnav/header/footerが
+# あるか、あるいはタイトル自体が既知のナビゲーション文言と一致する場合は除外する。
+_POPUP_NAV_EXCLUDE_TITLES = {
+    "日本語", "english", "简体中文", "繁體中文", "繁体字", "简体字", "한국어",
+    "ภาษาไทย", "tax free", "フロア一覧", "レストラン・カフェ", "ショップを探す",
+    "ショップからのお知らせ", "パルコからのお知らせ", "parcoメンバーズ",
+    "イベント・ポップアップ", "サイトマップ", "お問い合わせ", "アクセス",
+    "営業時間", "フロアガイド", "ニュース一覧", "お知らせ一覧", "店舗一覧", "ホーム",
+}
+
+
+def _is_nav_or_utility_link(a) -> bool:
+    if a.find_parent(["nav", "header", "footer"]) is not None:
+        return True
+    title_norm = clean(a.get_text(" ", strip=True)).strip().lower()
+    return title_norm in _POPUP_NAV_EXCLUDE_TITLES
+
+
+def collect_sapporo_parco_popup(max_items: int = 60) -> Iterable[EventItem]:
+    """札幌PARCO公式「イベント」ページから、ジャンルを問わずイベント情報全般を取得する。
+    POPUP関連の文言がある項目には引き続き「ポップアップストア」用のタグを付け、
+    それ以外（飲食・音楽ライブ・アニメ等）は通常のclassify()のキーワード判定に任せる。"""
+    url = "https://sapporo.parco.jp/event/?page=1"
+    soup = fetch(url)
+    if soup is None:
+        return
+
+    seen = set()
+    count = 0
+
+    for a in soup.find_all("a", href=True):
+        href = a.get("href", "")
+        # イベント詳細ページへのリンクだけを対象にする（ナビゲーション等の除外）
+        if "/event/detail/" not in href:
+            continue
+        if _is_nav_or_utility_link(a):
+            continue
+
+        title = clean(a.get_text(" ", strip=True))
+        if not title or len(title) < 3:
+            continue
+
+        block = a
+        block_text = title
+        # 親要素を数段たどって、一覧カードに表示されている開催日・会場も取得
+        for _ in range(4):
+            if block.parent is None:
+                break
+            block = block.parent
+            candidate = clean(block.get_text(" ", strip=True))
+            if len(candidate) > len(block_text):
+                block_text = candidate
+            if len(block_text) > 500:
+                break
+
+        full_url = href if href.startswith("http") else f"https://sapporo.parco.jp{href}"
+        if full_url in seen:
+            continue
+
+        popup_text = normalize(block_text).lower()
+        is_popup = any(k.lower() in popup_text for k in [
+            "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop"
+        ])
+        tags = ["ポップアップストア", "POPUP専用ソース"] if is_popup else []
+
+        # 一覧のタイトルに日付が混ざる場合を除去
+        clean_title = re.sub(
+            r"^\s*(?:POPUP|POP-UP|ポップアップ|POPUP / [^ ]+)\s*(?:予告|開催中)?\s*",
+            "",
+            title,
+            flags=re.I,
+        ).strip()
+        if len(clean_title) < 3:
+            clean_title = title
+
+        # 「公開日」ではなく、詳細ページの「イベント期間」を開催日として最優先取得。
+        # PARCO一覧には開催日が直接載っているため、それもフォールバックとして使用する。
+        detail = fetch(full_url)
+        published_date = _extract_published_date_from_text(block_text)
+        date_text = _extract_event_period_from_soup(detail) if detail is not None else ""
+        if not date_text:
+            date_text = _parse_popup_date_text(block_text)
+        if detail is not None and not published_date:
+            published_date = _extract_published_date_from_text(clean(" ".join(detail.stripped_strings)))
+
+        seen.add(full_url)
+        count += 1
+        yield EventItem(
+            source="札幌PARCO",
+            title=clean_title[:100],
+            url=full_url,
+            date_text=date_text[:60],
+            published_date=published_date[:30],
+            place="札幌PARCO",
+            tags=tags,
+        )
+        if count >= max_items:
+            break
+
+    log.info(f"札幌PARCO(全イベント): {count}件")
+
+
+def collect_stellarplace_popup(max_items: int = 50) -> Iterable[EventItem]:
+    """札幌ステラプレイス公式トピックス＋ショップニュースからPOPUP/LIMITED SHOPだけを取得。"""
+    urls = [
+        "https://www.stellarplace.net/topics",
+        "https://www.stellarplace.net/",
+        "https://www.jr-tower.jp/open_renewal_stellar",
+    ]
+    seen = set()
+    count = 0
+
+    for url in urls:
+        soup = fetch(url)
+        if soup is None:
+            continue
+
+        for a in soup.find_all("a", href=True):
+            title = clean(a.get_text(" ", strip=True))
+            if not title:
+                continue
+            if _is_nav_or_utility_link(a):
+                continue
+
+            node = a
+            block_text = title
+            for _ in range(4):
+                if node.parent is None:
+                    break
+                node = node.parent
+                candidate = clean(node.get_text(" ", strip=True))
+                if len(candidate) > len(block_text):
+                    block_text = candidate
+                if len(block_text) > 600:
+                    break
+
+            normalized = normalize(block_text).lower()
+            if not any(k in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
+            ]):
+                continue
+
+            href = a.get("href", "")
+            if not href or href.startswith("#"):
+                continue
+            full_url = href if href.startswith("http") else (
+                "https://www.stellarplace.net" + href
+                if url.startswith("https://www.stellarplace.net")
+                else "https://www.jr-tower.jp" + href
+            )
+            if full_url in seen:
+                continue
+
+            date_text = _parse_popup_date_text(block_text)
+            clean_title = re.sub(
+                r"^\s*(?:POPUP|POP-UP|ポップアップ|LIMITED SHOP)\s*",
+                "",
+                title,
+                flags=re.I,
+            ).strip() or title
+
+            seen.add(full_url)
+            count += 1
+            yield EventItem(
+                source="札幌ステラプレイス(ポップアップ)",
+                title=clean_title[:100],
+                url=full_url,
+                date_text=date_text[:60],
+                place="札幌ステラプレイス",
+                tags=["ポップアップストア", "POPUP専用ソース"],
+            )
+            if count >= max_items:
+                log.info(f"札幌ステラプレイス(ポップアップ): {count}件")
+                return
+
+    log.info(f"札幌ステラプレイス(ポップアップ): {count}件")
+
+
+def collect_apia_popup(max_items: int = 50) -> Iterable[EventItem]:
+    """アピア公式ショップニュースからPOPUP/期間限定ショップだけを取得。
+    セール等の通常ショップニュースは対象外。"""
+    url = "https://www.apiadome.com/shopnews"
+    soup = fetch(url)
+    if soup is None:
+        return
+
+    seen = set()
+    count = 0
+
+    for a in soup.find_all("a", href=True):
+        title = clean(a.get_text(" ", strip=True))
+        if not title:
+            continue
+        if _is_nav_or_utility_link(a):
+            continue
+
+        node = a
+        block_text = title
+        for _ in range(4):
+            if node.parent is None:
+                break
+            node = node.parent
+            candidate = clean(node.get_text(" ", strip=True))
+            if len(candidate) > len(block_text):
+                block_text = candidate
+            if len(block_text) > 600:
+                break
+
+        normalized = normalize(block_text).lower()
+        if not any(k in normalized for k in [
+            "popup", "pop-up", "ポップアップ", "limited shop", "期間限定ショップ", "期間限定店"
+        ]):
+            continue
+
+        href = a.get("href", "")
+        if not href or href.startswith("#"):
+            continue
+        full_url = href if href.startswith("http") else f"https://www.apiadome.com{href}"
+        if full_url in seen:
+            continue
+
+        seen.add(full_url)
+        count += 1
+        yield EventItem(
+            source="アピア(ポップアップ)",
+            title=title[:100],
+            url=full_url,
+            date_text=_parse_popup_date_text(block_text)[:60],
+            place="アピア",
+            tags=["ポップアップストア", "POPUP専用ソース"],
+        )
+        if count >= max_items:
+            break
+
+    log.info(f"アピア(ポップアップ): {count}件")
+
+
+def collect_daimaru_sapporo_museum() -> Iterable[EventItem]:
+    """大丸・松坂屋公式「展覧会」から札幌会場の展示会を取得。
+    記事公開日ではなく、ページ上の「会期」をdate_textへ入れる。
+    大丸公式が取得できない場合はSQUARE ENIX公式の北海道会場をフォールバックにする。"""
+    official_url = "https://dmdepart.jp/museum/"
+    target_title = "鋼の錬金術師×黄泉のツガイ展"
+
+    soup = fetch(official_url)
+    if soup is not None:
+        page_text = clean(" ".join(soup.stripped_strings))
+        if target_title in page_text and "大丸札幌店" in page_text:
+            idx = page_text.find(target_title)
+            block = page_text[idx:idx + 700]
+            date_text = _parse_popup_date_text(block)
+            if date_text:
+                yield EventItem(
+                    source="大丸・松坂屋公式(展覧会)",
+                    title=target_title,
+                    url=official_url,
+                    date_text=date_text[:60],
+                    place="大丸札幌店 7階ホール",
+                    tags=["アニメ・漫画系", "大丸札幌店", "公式イベント"],
+                )
+                log.info("大丸札幌店(展覧会): 鋼の錬金術師×黄泉のツガイ展を取得")
+                return
+
+    fallback_url = "https://magazine.jp.square-enix.com/gangan/campaign/hagaren_yomi_ten/"
+    soup2 = fetch(fallback_url)
+    if soup2 is not None:
+        text = clean(" ".join(soup2.stripped_strings))
+        if target_title in text and "2026年10月14日" in text and "11月1日" in text and "大丸札幌店" in text:
+            yield EventItem(
+                source="SQUARE ENIX公式(北海道会場)",
+                title=target_title,
+                url=fallback_url,
+                date_text="2026年10月14日（水）～11月1日（日）",
+                place="大丸札幌店 7階ホール",
+                tags=["アニメ・漫画系", "大丸札幌店", "公式イベント"],
+            )
+            log.info("大丸札幌店(展覧会): SQUARE ENIX公式フォールバックで取得")
+            return
+
+    log.warning("大丸札幌店(展覧会): 大丸公式・SQUARE ENIX公式の両方から対象展覧会を取得できませんでした")
+
+
+def collect_daimaru_sapporo_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
+    """大丸札幌店公式SHOP BLOG（テナント各店のお知らせ記事一覧）からアニメ・ゲーム・
+    漫画関連のPOPUP/期間限定ショップ/コラボカフェ等だけを取得する。
+    大丸札幌店本体の「イベントカレンダー」はJavaScriptで動的生成されるため取得できないが、
+    こちらのSHOP BLOGは静的HTMLで一覧が出力されるため取得可能。"""
+    seen = set()
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = "https://shopblog.dmdepart.jp/sapporo/" if page == 1 else f"https://shopblog.dmdepart.jp/sapporo/?p={page}"
+        soup = fetch(url)
+        if soup is None:
+            continue
+        for a in soup.find_all("a", href=True):
+            href = a.get("href", "")
+            if "/sapporo/detail/" not in href:
+                continue
+            title = clean(a.get_text(" ", strip=True))
+            if not title or len(title) < 3:
+                continue
+            normalized = normalize(title).lower()
+            if not any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop", "コラボ"
+            ]):
+                continue
+            full_url = href if href.startswith("http") else f"https://shopblog.dmdepart.jp{href}"
+            if full_url in seen:
+                continue
+            # SHOP BLOGの先頭日付は「記事公開日」であり、開催日ではない。
+            # 詳細記事から「会期/開催期間/期間限定」等の実開催期間だけを取得する。
+            published_date = _extract_published_date_from_text(title)
+            detail = fetch(full_url)
+            date_text = _extract_event_period_from_soup(detail) if detail is not None else ""
+            if not date_text and detail is not None:
+                date_text = _parse_popup_date_text(clean(" ".join(detail.stripped_strings)))
+            seen.add(full_url)
+            count += 1
+            yield EventItem(
+                source="大丸札幌店(SHOP BLOG)",
+                title=title[:100],
+                url=full_url,
+                date_text=date_text[:60],
+                published_date=published_date[:30],
+                place="大丸札幌店",
+                tags=["ポップアップストア", "POPUP専用ソース"],
+            )
+            if count >= max_items:
+                log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+                return
+        time.sleep(REQUEST_INTERVAL_SEC)
+    log.info(f"大丸札幌店(SHOP BLOG): {count}件チェック（アニメ/ゲーム/漫画関連の絞り込みは後でclassify()が行う）")
+
+
+def collect_tanukikoji_popup(max_pages: int = 3, max_items: int = 60) -> Iterable[EventItem]:
+    """狸小路商店街（moyuk SAPPORO等を含む）公式サイトの「ニュース&イベント」一覧から
+    アニメ・ゲーム・漫画関連のPOPUP/期間限定ショップ等だけを取得する。"""
+    seen = set()
+    count = 0
+    for page in range(1, max_pages + 1):
+        url = "https://tanukikoji.or.jp/news-event/" if page == 1 else f"https://tanukikoji.or.jp/news-event/page/{page}/"
+        soup = fetch(url)
+        if soup is None:
+            continue
+        for h in soup.find_all(["h2", "h3"]):
+            a = h.find("a", href=True)
+            if a is None:
+                continue
+            href = a.get("href", "")
+            if "/news-event/" not in href or href.rstrip("/").endswith("news-event"):
+                continue
+            if _is_nav_or_utility_link(a):
+                continue
+            title = clean(a.get_text(" ", strip=True))
+            if not title:
+                continue
+
+            # 見出しの後ろに続く説明文＋日付らしき行も合わせて拾う（同じ記事ブロック内）
+            block_text = title
+            node = h
+            for _ in range(4):
+                nxt = node.find_next_sibling()
+                if nxt is None:
+                    break
+                candidate = clean(nxt.get_text(" ", strip=True))
+                block_text += " " + candidate
+                node = nxt
+                if len(block_text) > 400:
+                    break
+
+            full_url = href if href.startswith("http") else f"https://tanukikoji.or.jp{href}"
+            if full_url in seen:
+                continue
+
+            normalized = normalize(block_text).lower()
+            is_popup = any(k.lower() in normalized for k in [
+                "popup", "pop-up", "ポップアップ", "期間限定ショップ", "期間限定店", "limited shop"
+            ])
+            tags = ["ポップアップストア", "POPUP専用ソース"] if is_popup else []
+
+            seen.add(full_url)
+            count += 1
+            yield EventItem(
+                source="狸小路商店街",
+                title=re.sub(r"^\s*【終了しました】\s*", "", title)[:100],
+                url=full_url,
+                date_text=_parse_popup_date_text(block_text)[:60],
+                place="狸小路商店街",
+                tags=tags,
+            )
+            if count >= max_items:
+                log.info(f"狸小路商店街(全イベント): {count}件")
+                return
+        time.sleep(REQUEST_INTERVAL_SEC)
+    log.info(f"狸小路商店街(全イベント): {count}件")
+
+
+
+
+
+def _year_for_month(month: int) -> int:
+    """現在日付から、ページ上に年がない月日表記の年を補う。"""
+    today = datetime.now().date()
+    return today.year
+
+
+def collect_sapporo_autumnfest() -> Iterable[EventItem]:
+    """ようこそさっぽろ／さっぽろオータムフェスト公式から開催期間を自動取得。"""
+    url = "https://www.sapporo.travel/autumnfest/"
+    soup = fetch(url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    # 公式ページの「9月11日(金)～10月3日(土)」のような会期表記を取得。
+    m = re.search(r"(\d{1,2}月\d{1,2}日(?:\([^)]*\)|（[^）]*）)?\s*[～〜-]\s*\d{1,2}月\d{1,2}日(?:\([^)]*\)|（[^）]*）)?)", text)
+    if not m:
+        log.warning("さっぽろオータムフェスト: 公式ページから開催期間を取得できませんでした")
+        return
+    date_text = f"{datetime.now().year}年{m.group(1)}"
+    yield EventItem(
+        source="さっぽろオータムフェスト公式",
+        title=f"{datetime.now().year}さっぽろオータムフェスト",
+        url=url,
+        date_text=date_text,
+        place="大通公園（中央区）",
+        tags=["大型イベント", "公式イベント"],
+    )
+    log.info("さっぽろオータムフェスト(公式): 自動取得")
+
+
+def collect_kuwata_sapporo() -> Iterable[EventItem]:
+    """サザンオールスターズ公式ツアー日程から北海道公演を自動取得。"""
+    url = "https://southernallstars.jp/feature/kuwata2026live"
+    soup = fetch(url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    # 北海道公演の2日分を公式SCHEDULEから取得。日付は同一公演なので1イベントに統合。
+    dates = []
+    for dm in re.finditer(r"(\d{2})\.(\d{2})(?:水|木|金|土|日|月|火)", text):
+        window = text[dm.start():dm.start() + 140]
+        if "北海道" in window and "真駒内" in window:
+            dates.append((dm.group(1), dm.group(2)))
+    if not dates:
+        # 改行や空白の入り方が変わった場合の緩いフォールバック
+        dates = re.findall(r"(\d{2})\.(\d{2})[^\n]{0,160}北海道[^\n]{0,160}真駒内", text)
+    if not dates:
+        log.warning("桑田佳祐 夏祭りツアー: 北海道公演を公式ページから取得できませんでした")
+        return
+    dates = sorted(set(dates))
+    if len(dates) == 1:
+        date_text = f"{datetime.now().year}年{int(dates[0][0])}月{int(dates[0][1])}日"
+    else:
+        date_text = f"{datetime.now().year}年{int(dates[0][0])}月{int(dates[0][1])}日・{int(dates[-1][0])}月{int(dates[-1][1])}日"
+    yield EventItem(
+        source="サザンオールスターズ公式(北海道公演)",
+        title="桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演",
+        url=url,
+        date_text=date_text,
+        place="北海道・真駒内セキスイハイムアイスアリーナ",
+        tags=["全国ツアー", "公式イベント"],
+    )
+    log.info("桑田佳祐 夏祭りツアー(公式): 北海道公演を自動取得")
+
+
+def collect_coffee_pairing_festival() -> Iterable[EventItem]:
+    """大丸札幌店のCoffee Pairing Festival公式ページから会期・会場を取得。
+
+    公式ページへの一時的な接続失敗で開催中イベントが消えないよう、
+    公式URL・公式掲載済みの会期を安全なフォールバックとして保持する。
+    手動登録には戻さず、この公式ソース自身が最後までイベントを生成する。
+    """
+    url = "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/"
+    soup = fetch(url)
+    text = clean(" ".join(soup.stripped_strings)) if soup is not None else ""
+    # 「9月23日（水・祝）〜28日（月）」を優先して取得。
+    # 公式ページのファーストビューに会期が明記されているため、まずその表記を厳密に探す。
+    # 2026年の公式会期は「9月23日（水・祝）〜28日（月）」。
+    m = re.search(r"(9月23日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*28日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
+    if not m:
+        m = re.search(r"(\d{1,2}月\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?\s*[〜～-]\s*\d{1,2}日(?:\s*（[^）]*）|\s*\([^)]*\))?)", text)
+    # ページ構造変更時も、この公式イベントの既知の会期を安全なフォールバックとして使用する。
+    raw = m.group(1) if m else "9月23日（水・祝）〜28日（月）"
+    date_text = f"2026年{raw}"
+    yield EventItem(
+        source="大丸札幌店公式(Coffee Pairing Festival)",
+        title="Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）",
+        url=url,
+        date_text=date_text,
+        place="大丸札幌店 7階催事場（中央区）",
+        tags=["デパート催事", "公式イベント"],
+    )
+    if soup is None:
+        log.warning("Coffee Pairing Festival(大丸公式): 公式ページ取得失敗のため、公式URL/公式会期の安全なフォールバックで登録")
+    else:
+        log.info("Coffee Pairing Festival(大丸公式): 自動取得")
+
+
+def ensure_coffee_pairing_festival(conn: sqlite3.Connection, today: str) -> None:
+    """Coffee Pairing Festival 2026 をDB上で必ず公式イベントとして同期する。
+
+    自動収集・手動フォールバック・旧DBの残骸が混在しても、同一イベントを
+    1件に正規化するための最終同期処理。公式ページの現行会期は
+    2026/9/23〜9/28、大丸札幌店7階催事場。
+    """
+    url = "https://www.daimaru.co.jp/sapporo/coffeepairingfestival2026/"
+    title = "Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"
+    date_text = "2026年9月23日（水・祝）〜28日（月）"
+    place = "大丸札幌店 7階催事場（中央区）"
+    cats = ["🎪 中心部のイベント情報", "🏬 デパート催事"]
+
+    # URLが違う、sourceが古い、タイトル表記が違う等の旧レコードを先に整理。
+    cur = conn.execute("SELECT url, title FROM events")
+    remove_urls = []
+    target_key = _manual_title_key(title)
+    for old_url, old_title in cur.fetchall():
+        key = _manual_title_key(old_title or "")
+        if ("coffee pairing festival" in (old_title or "").lower()
+                or "コーヒーペアリングフェスティバル" in (old_title or "")
+                or (key and key == target_key)) and old_url != url:
+            remove_urls.append(old_url)
+    for old_url in remove_urls:
+        conn.execute("DELETE FROM events WHERE url = ?", (old_url,))
+    if remove_urls:
+        log.info(f"Coffee Pairing Festival旧レコード整理: {len(remove_urls)}件削除")
+
+    # 現行公式URLを主キーとして、必ず最新の公式情報へ同期。
+    conn.execute("""
+        INSERT INTO events (url, source, title, date_text, published_date, place, fee, categories, blurb, links, first_seen, last_seen)
+        VALUES (?, ?, ?, ?, '', ?, '', ?, '', '', ?, ?)
+        ON CONFLICT(url) DO UPDATE SET
+            source=excluded.source, title=excluded.title, date_text=excluded.date_text,
+            place=excluded.place, categories=excluded.categories, last_seen=excluded.last_seen
+    """, (url, "大丸札幌店公式(Coffee Pairing Festival)", title, date_text, place, ",".join(cats), today, today))
+    conn.commit()
+    log.info("Coffee Pairing Festival: 公式情報をDBへ最終同期（9/23〜9/28・大丸札幌店7階催事場）")
+
+
+def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
+    """『超かぐや姫！』公式／札幌劇場公式情報から復活上映を自動取得。"""
+    official_url = "https://www.news.cho-kaguyahime.com/"
+    soup = fetch(official_url)
+    if soup is None:
+        return
+    text = clean(" ".join(soup.stripped_strings))
+    if "9月18日" not in text or "復活上映" not in text:
+        log.warning("超かぐや姫！: 公式サイトから復活上映情報を取得できませんでした")
+        return
+    # 札幌での上映はユナイテッド・シネマ札幌公式でも9/18公開中を確認できるため、
+    # 会場は札幌市内主要映画館として登録する。
+    yield EventItem(
+        source="超かぐや姫！公式(復活上映)",
+        title="映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
+        url=official_url,
+        date_text=f"{datetime.now().year}年9月18日(金)～",
+        place="札幌市内の映画館（中央区）",
+        tags=["映画上映中", "アニメ映画", "公式イベント"],
+    )
+    log.info("超かぐや姫！(公式): 復活上映を自動取得")
+
+def collect_manual_events() -> Iterable[EventItem]:
+    """自動収集が難しい大型の年次フェス等を手動で登録しておく場所。
+    ここに追加した項目も、他の情報源と同じくclassify()でカテゴリ判定される
+    （タイトルにCATEGORY_INCLUDEの語句が含まれていれば自動的に採用される）。
+    URLは重複判定のキーにもなるので、年ごとに変えるなどして使い回さないこと。
+
+    映画の場合は "release_date"（公開日）を指定しておくと、実行日がその日を
+    迎えたかどうかで自動的に「🍿 公開予定映画」→「🎬 映画」へタグが切り替わる
+    （公開日を過ぎたら手動で書き換える必要がない）。"""
+    manual_events = [
+        {
+            "title": "2026さっぽろオータムフェスト",
+            "date_text": "2026年9月11日(金)〜10月3日(土)",
+            "place": "大通公園（中央区）",
+            "url": "https://www.sapporo.travel/autumnfest/",
+        },
+        {
+            "title": "桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演",
+            "date_text": "2026年8月27日(木)・28日(金)",
+            "place": "真駒内セキスイハイムアイスアリーナ",
+            "url": "https://southernallstars.jp/feature/kuwata2026live#sapporo2026",
+        },
+        {
+            "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
+            "date_text": "2026年9月18日(金)〜",
+            "place": "札幌市内の映画館（中央区）",
+            "url": "https://www.cho-kaguyahime.com/theater/",
+            "release_date": date(2026, 9, 18),  # この日を迎えると自動的に「映画上映中」に切り替わる
+        },
+        # 他の年次フェスもここに追加できます。例:
+        # {
+        #     "title": "さっぽろ雪まつり2027",
+        #     "date_text": "2027年2月上旬",
+        #     "place": "大通公園（中央区）ほか",
+        #     "url": "https://www.snowfes.com/#2027",
+        # },
+    ]
+    today = datetime.now().date()
+    for ev in manual_events:
+        tags = list(ev.get("tags", []))
+        release_date = ev.get("release_date")
+        if release_date:
+            if today >= release_date:
+                tags = [t for t in tags if t != "公開予定映画"]
+                if "映画上映中" not in tags:
+                    tags.append("映画上映中")
+            else:
+                tags = [t for t in tags if t != "映画上映中"]
+                if "公開予定映画" not in tags:
+                    tags.append("公開予定映画")
+        yield EventItem(
+            source="手動登録(年次フェス)",
+            title=ev["title"],
+            url=ev["url"],
+            date_text=ev.get("date_text", ""),
+            place=ev.get("place", ""),
+            tags=tags,
+        )
+    log.info(f"手動登録候補: {len(manual_events)}件（自動取得できない場合のみフォールバック）")
+
+
+def parse_eventernote_listing(soup: BeautifulSoup):
+    """イベンターノートの会場別イベント一覧を解析し、(タイトル, URL, 開催日) のリストを返す。
+    日付見出し（YYYY-MM-DD (曜)）とイベント詳細リンク（/events/数字）が
+    ページ内に同じ順番で1対1に並んでいる、という構造だけを頼りに抽出する。"""
+    date_re = re.compile(r"\d{4}-\d{2}-\d{2} \([月火水木金土日]\)")
+    dates_in_order = date_re.findall(soup.get_text())
+
+    seen = set()
+    events = []
+    for a in soup.find_all("a", href=re.compile(r"/events/\d+$")):
+        href = a["href"]
+        if href in seen:
+            continue
+        seen.add(href)
+        title = clean(a.get_text())
+        if title:
+            events.append((title, href))
+
+    results = []
+    for i, (title, href) in enumerate(events):
+        date_text = dates_in_order[i] if i < len(dates_in_order) else ""
+        results.append((title, href, date_text))
+    return results
+
+
+# イベンターノートで確認できた、中央区内外の主要会場のID
+EVENTERNOTE_VENUES = {
+    650: "cube garden",  # 参考: 既にcube_garden個別ソースがあるため未使用（重複防止のためコメントのみ）
+    13: "Zepp Sapporo",
+    654: "北海きたえーる",
+    9869: "札幌文化芸術劇場hitaru",
+    10: "大和ハウスプレミストドーム（札幌ドーム）",
+    950: "真駒内セキスイハイムアイスアリーナ",
+}
+
+
+def collect_eventernote_major_venues(max_pages: int = 2) -> Iterable[EventItem]:
+    """イベンターノートで、メジャーアーティストの公演が多い主要会場（中央区外含む）の
+    直近イベントを取得する。会場名自体がCATEGORY_INCLUDEの語句になっているため、
+    後段のclassify()で自動的に音楽ライブとして採用される（クラシック等は引き続き除外）。"""
+    count = 0
+    for place_id, venue_name in EVENTERNOTE_VENUES.items():
+        if place_id == 650:
+            continue  # cube gardenは別ソースで収集済みのためスキップ
+        for page in range(1, max_pages + 1):
+            url = f"https://www.eventernote.com/places/{place_id}/events?limit=30&page={page}"
+            soup = fetch(url)
+            if soup is None:
+                break
+            items = parse_eventernote_listing(soup)
+            if not items:
+                break
+            for title, href, date_text in items:
+                full_url = href if href.startswith("http") else f"https://www.eventernote.com{href}"
+                count += 1
+                yield EventItem(
+                    source=f"イベンターノート({venue_name})",
+                    title=clean(title)[:80],
+                    url=full_url,
+                    date_text=clean(date_text)[:20],
+                    place=venue_name,
+                )
+    log.info(f"イベンターノート(主要会場): {count}件チェック")
+
+
+SAPPORO_MOVIE_THEATERS = {
+    "th220": "ローソン・ユナイテッドシネマ札幌",
+    "th592": "札幌シネマフロンティア",
+    "th828": "TOHOシネマズすすきの",
+    # "th533": "シアターキノ",  # ご要望により映画カテゴリの対象から除外（ミニシアター系のため）
+}
+
+# 現在上映中の映画一覧には「アニメかどうか」の情報が付いていないため、
+# タイトルに含まれる語句で簡易的にアニメ映画かどうかを判定する。
+# 新作アニメ映画のタイトルが拾えない場合は、ここにキーワードを追加してください。
+ANIME_MOVIE_HINTS = [
+    "アニメ", "劇場版", "ちいかわ", "クレヨンしんちゃん", "ポケモン", "ドラえもん",
+    "名探偵コナン", "鬼滅の刃", "呪術廻戦", "ワンピース", "ガンダム", "五等分の花嫁",
+    "推しの子", "スパイファミリー", "スパイ×ファミリー", "ヒーローアカデミア", "チェンソーマン",
+    "薬屋のひとりごと", "プリキュア", "ウルトラマン", "幻想水滸伝", "パウ・パトロール",
+    "ミニオンズ", "まどか", "マギカ",
+]
+
+def _extract_title_from_schedule_page(url: str) -> Optional[str]:
+    """個別の上映スケジュールページの<title>タグから、正確な映画タイトルだけを取り出す。
+    例: "映画ちいかわ 人魚の島のひみつ TOHOシネマズ すすきの(札幌) の上映時間・上映スケジュール | MOVIE WALKER PRESS 映画"
+        → "映画ちいかわ 人魚の島のひみつ"
+    一覧ページ周辺のDOM構造を辿る方式は、サイト内の無関係な要素（ランキング等）を
+    誤って拾ってしまい不安定だったため、この方式に切り替えている。"""
+    soup = fetch(url)
+    if soup is None or not soup.title or not soup.title.string:
+        return None
+    raw = clean(soup.title.string)
+    raw = re.sub(r"\s*[^\s]*\(.*?\)\s*の上映時間.*$", "", raw)
+    raw = re.sub(r"\s*\|\s*MOVIE WALKER PRESS.*$", "", raw)
+    raw = raw.strip()
+    return raw or None
+
+
+def collect_movie_theaters() -> Iterable[EventItem]:
+    """札幌市内の主要映画館（ユナイテッド・シネマ札幌/札幌シネマフロンティア/シアターキノ/
+    TOHOシネマズすすきの。いずれも中央区）で現在上映中の映画を全件取得する（🎬映画）。
+    タイトルにANIME_MOVIE_HINTSの語句が含まれるものは、あわせて🎮アニメにも表示されるよう
+    タグを追加する。同じ映画が複数の映画館で上映されている場合は1件にまとめつつ、
+    それぞれの映画館の上映スケジュールページへのリンクを個別に持たせる。
+
+    まとめページ(theater/108等)は注目記事中心で全作品が載らないため、
+    映画館ごとの個別スケジュールページを1館ずつ巡回して対象の映画IDを集め、
+    そのあと各映画の個別ページを開いて正確なタイトルを取得する2段階方式にしている。"""
+    # movie_id -> [(theater_id, schedule_url), ...]（上映している映画館すべてを記録）
+    movie_theater_map: dict[str, list] = {}
+    for theater_id, theater_name in SAPPORO_MOVIE_THEATERS.items():
+        url = f"https://press.moviewalker.jp/{theater_id}/schedule/"
+        soup = fetch(url)
+        if soup is None:
+            continue
+        for a in soup.find_all("a", href=re.compile(rf"/mv\d+/schedule/{theater_id}/?$")):
+            href = a["href"]
+            m = re.search(r"/mv(\d+)/schedule/", href)
+            if not m:
+                continue
+            movie_id = m.group(1)
+            full_url = href if href.startswith("http") else f"https://press.moviewalker.jp{href}"
+            entries = movie_theater_map.setdefault(movie_id, [])
+            if not any(tid == theater_id for tid, _ in entries):
+                entries.append((theater_id, full_url))
+
+    count = 0
+    anime_count = 0
+    all_titles = []
+    for movie_id, theater_entries in movie_theater_map.items():
+        first_theater_id, first_url = theater_entries[0]
+        title = _extract_title_from_schedule_page(first_url)
+        if not title:
+            continue
+
+        tags = ["映画上映中"]
+        if any(hint in title for hint in ANIME_MOVIE_HINTS):
+            tags.append("劇場版")
+            anime_count += 1
+
+        links = [
+            {"label": SAPPORO_MOVIE_THEATERS[tid], "url": url}
+            for tid, url in theater_entries
+        ]
+        theater_names = "・".join(SAPPORO_MOVIE_THEATERS[tid] for tid, _ in theater_entries)
+
+        count += 1
+        all_titles.append(title)
+        yield EventItem(
+            source="映画館(上映中)",
+            title=title[:80],
+            url=f"https://press.moviewalker.jp/mv{movie_id}/",
+            place=f"{theater_names}（中央区）で上映中",
+            tags=tags,
+            links=links,
+        )
+    log.info(f"映画館(上映中): {count}件（うちアニメ映画と判定: {anime_count}件）")
+    log.info(f"映画館(上映中) 取得タイトル一覧: {all_titles}")
+
+
+_COMING_SOON_INFO_RE = re.compile(
+    r"^(\d{4})年(\d{1,2})月(\d{1,2})日(?:公開|再上映|再上映開始|上映開始|復活上映)(?:、\d+分)?(?:、(.+))?$"
+)
+
+
+def _parse_coming_soon_page(soup: BeautifulSoup):
+    """MOVIE WALKER PRESSの「公開予定」月別ページから (タイトル, href, 年, 月, 日, ジャンル文字列) を抽出する。
+    ページの並び順（タイトル文字列の直後に「YYYY年M月D日公開、上映時間、ジャンル」の行が続く）
+    だけを頼りにしているため、DOMのクラス名変更にはある程度強い。"""
+    href_by_title = {}
+    for a in soup.find_all("a", href=re.compile(r"^/mv\d+/?$")):
+        t = clean(a.get_text())
+        if t and t not in href_by_title:
+            href_by_title[t] = a["href"]
+
+    strings = list(soup.stripped_strings)
+    results = []
+    for i, s in enumerate(strings):
+        m = _COMING_SOON_INFO_RE.match(s)
+        if not m or i < 1:
+            continue
+        title = strings[i - 1]
+        if not title or len(title) > 80:
+            continue
+        y, mo, d, genre = m.groups()
+        href = href_by_title.get(title)
+        results.append((title, href, int(y), int(mo), int(d), genre or ""))
+    return results
+
+
+def collect_upcoming_movies() -> Iterable[EventItem]:
+    """今後2ヶ月以内に全国で公開予定の映画（🍿 公開予定映画）。
+    MOVIE WALKER PRESSの月別「公開予定」ページ（例: /list/coming/2026/09/）を、
+    対象期間が含まれる月×ページ送りぶんだけ巡回する。このページにはジャンル情報が
+    明記されているため、タイトルのキーワード判定に加えてジャンルに「アニメ」が
+    含まれるかどうかでもアニメ判定を行う（キーワード判定より確実）。
+    全国版のリストのため、必ずしも札幌の劇場での上映が確定しているとは限らない点に注意。"""
+    today = datetime.now().date()
+    window_end = today + timedelta(days=60)
+
+    # 対象期間をカバーする年月を列挙（当月から、window_endの月まで）
+    months = []
+    y, m = today.year, today.month
+    while date(y, m, 1) <= window_end:
+        months.append((y, m))
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
+
+    upcoming: dict[str, dict] = {}  # title -> {"date": date, "genre": str, "url": str}
+    all_found_before_filter = []
+
+    for y, m in months:
+        for page in range(1, 6):  # ページ送り。空振りが続いたら打ち切る
+            page_url = (
+                f"https://press.moviewalker.jp/list/coming/{y}/{m:02d}/"
+                if page == 1
+                else f"https://press.moviewalker.jp/list/coming/{y}/{m:02d}/p{page}/"
+            )
+            soup = fetch(page_url)
+            if soup is None:
+                break
+            entries = _parse_coming_soon_page(soup)
+            if not entries:
+                break
+            for title, href, ey, em, ed, genre in entries:
+                all_found_before_filter.append((title, f"{ey}年{em}月{ed}日", genre))
+                try:
+                    release_date = date(ey, em, ed)
+                except Exception:
+                    continue
+                if release_date < today or release_date > window_end:
+                    continue
+                if title in upcoming:
+                    continue
+                url = f"https://press.moviewalker.jp{href}" if href else page_url
+                upcoming[title] = {"date": release_date, "genre": genre, "url": url}
+
+    count = 0
+    anime_count = 0
+    for title, info in upcoming.items():
+        tags = ["公開予定映画"]
+        is_anime = "アニメ" in info["genre"] or any(hint in title for hint in ANIME_MOVIE_HINTS)
+        if is_anime:
+            tags.append("劇場版")
+            anime_count += 1
+
+        date_text = f"{info['date'].year}年{info['date'].month}月{info['date'].day}日公開"
+        genre_text = f"（{info['genre']}）" if info["genre"] else ""
+
+        count += 1
+        yield EventItem(
+            source="映画館(公開予定・全国版)",
+            title=title[:80],
+            url=info["url"],
+            date_text=date_text,
+            place=f"全国公開予定{genre_text}　※札幌での上映は劇場発表をご確認ください",
+            tags=tags,
+        )
+    log.info(f"映画館(公開予定): {count}件（うちアニメ映画と判定: {anime_count}件）")
+    log.info(f"映画館(公開予定) フィルタ前の全件({len(all_found_before_filter)}件): {all_found_before_filter[:30]}...")
+
+
+SOURCES = {
+    "satsuibe": collect_satsuibe,
+    "chikaho": collect_chikaho,
+    "cube_garden": collect_cube_garden,
+    "walkerplus_live": collect_walkerplus_live,
+    "walkerplus_anime": collect_walkerplus_anime,
+    "eventernote_major": collect_eventernote_major_venues,
+    "mitsukoshi": collect_mitsukoshi,
+    "maruiimai": collect_maruiimai,
+    "sapporo_factory": collect_sapporo_factory,
+    "sapporo_parco_popup": collect_sapporo_parco_popup,
+    "stellarplace_popup": collect_stellarplace_popup,
+    "apia_popup": collect_apia_popup,
+    "daimaru_sapporo_museum": collect_daimaru_sapporo_museum,
+    "daimaru_sapporo_popup": collect_daimaru_sapporo_popup,
+    "tanukikoji_popup": collect_tanukikoji_popup,
+    "official_anime_manga_game_reverse": collect_official_anime_manga_game,
+    "official_dedicated_site_discovery": collect_discovered_official_sites,
+    "movie_theaters": collect_movie_theaters,
+    "upcoming_movies": collect_upcoming_movies,
+    "sapporo_autumnfest_official": collect_sapporo_autumnfest,
+    "kuwata_sapporo_official": collect_kuwata_sapporo,
+    "coffee_pairing_official": collect_coffee_pairing_festival,
+    "cho_kaguyahime_official": collect_cho_kaguyahime_revival,
+    "manual": collect_manual_events,
+}
+
+
+# ----------------------------------------------------------------------------
+# データベース
+# ----------------------------------------------------------------------------
+
+def migrate_legacy_manual_event_urls(conn: sqlite3.Connection) -> None:
+    """既知の旧手動登録URLを削除し、現行公式URLの自動取得/フォールバックへ一本化する。
+
+    Coffee Pairing Festival 2026 は旧URLが404になり、旧手動登録には誤った会期
+    (9/30〜10/6)が残っていたため、実行開始時に旧行を除去する。自動取得が成功すれば
+    公式ソースを採用し、失敗した場合は同じ実行のmanualフォールバックが正しいURL/会期で再登録する。
+    """
+    legacy_urls = {
+        "https://www.daimaru.co.jp/sapporo/coffeepairingfestival/",
+    }
+    legacy_title_key = _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）")
+    cur = conn.execute("SELECT url, title, source FROM events WHERE source = ?", ("手動登録(年次フェス)",))
+    removed = 0
+    for url, title, source in cur.fetchall():
+        if url in legacy_urls:
+            conn.execute("DELETE FROM events WHERE url = ?", (url,))
+            removed += 1
+    if removed:
+        conn.commit()
+        log.info(f"旧Coffee Pairing Festival手動登録を整理: {removed}件削除")
+
+
+def cleanup_stale_manual_urls(conn: sqlite3.Connection) -> None:
+    """手動登録イベントはURLを変更することがあるため、現在のmanual_eventsに
+    含まれないURLパターン（手動登録ソースなのに一致しないもの）は
+    重複表示を防ぐため削除しておく。"""
+    current_urls = {ev["url"] for ev in [
+        {"url": item.url} for item in collect_manual_events()
+    ]}
+    cur = conn.execute("SELECT url FROM events WHERE source = ?", ("手動登録(年次フェス)",))
+    stale = [row[0] for row in cur.fetchall() if row[0] not in current_urls]
+    for url in stale:
+        conn.execute("DELETE FROM events WHERE url = ?", (url,))
+    if stale:
+        conn.commit()
+        log.info(f"手動登録イベントの古いURL {len(stale)}件を削除しました")
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS events (
+            url TEXT PRIMARY KEY,
+            source TEXT,
+            title TEXT,
+            date_text TEXT,
+            place TEXT,
+            fee TEXT,
+            categories TEXT,
+            first_seen TEXT,
+            last_seen TEXT
+        )
+        """
+    )
+    # 旧バージョン(列が無い)で作られたDBを引き続き使えるよう自動マイグレーション
+    existing_cols = {row[1] for row in conn.execute("PRAGMA table_info(events)")}
+    if "categories" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN categories TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（categories列を追加）")
+    if "blurb" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN blurb TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（blurb列を追加）")
+    if "links" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN links TEXT DEFAULT ''")
+        log.info("DBを新バージョン形式にマイグレーションしました（links列を追加）")
+    if "published_date" not in existing_cols:
+        conn.execute("ALTER TABLE events ADD COLUMN published_date TEXT DEFAULT ''")
+        # 旧版ではSHOP BLOGの「記事公開日」をdate_textに入れていたため、
+        # 旧データは一度クリアして次回収集時に実開催期間を再取得させる。
+        conn.execute("UPDATE events SET published_date = date_text, date_text = '' WHERE source LIKE '%SHOP BLOG%'")
+        log.info("DBを新バージョン形式にマイグレーションしました（published_date列追加＋SHOP BLOG旧日付を開催日から分離）")
+    conn.commit()
+
+
+def upsert_event(conn: sqlite3.Connection, item: EventItem, today: str) -> bool:
+    """新規なら True（新着）、既存なら内容(タイトル等)とlast_seenを更新して False を返す。
+    タイトルや日付/場所も毎回上書きするのは、情報源側の表記が後から変わったり、
+    以前のバグ等で誤った内容が保存されてしまった場合でも、再取得時に自動的に
+    最新の正しい内容へ直るようにするため。"""
+    cur = conn.execute("SELECT url FROM events WHERE url = ?", (item.url,))
+    row = cur.fetchone()
+    cats = ",".join(item.categories)
+    links_json = json.dumps(item.links, ensure_ascii=False) if item.links else ""
+    if row is None:
+        conn.execute(
+            """
+            INSERT INTO events (url, source, title, date_text, published_date, place, fee, categories, blurb, links, first_seen, last_seen)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (item.url, item.source, item.title, item.date_text, item.published_date, item.place, item.fee, cats, item.blurb,
+             links_json, today, today),
+        )
+        return True
+    else:
+        # 紹介文(blurb)は新しく判定できた時だけ上書きする（AI無効時に空で消してしまわないため）
+        blurb_clause = ", blurb = ?" if item.blurb else ""
+        params = [today, item.title, item.date_text, item.published_date, item.place, item.fee, cats, links_json]
+        if item.blurb:
+            params.append(item.blurb)
+        params.append(item.url)
+        conn.execute(
+            f"""
+            UPDATE events SET last_seen = ?, title = ?, date_text = ?, published_date = ?, place = ?, fee = ?,
+                               categories = ?, links = ?{blurb_clause}
+            WHERE url = ?
+            """,
+            params,
+        )
+        return False
+
+
+def fetch_all_current(conn: sqlite3.Connection) -> list:
+    """DB内の全件を、表示用にカテゴリ別へ振り分けて返す"""
+    cur = conn.execute(
+        "SELECT source, title, date_text, published_date, place, fee, categories, url, first_seen, blurb, links "
+        "FROM events ORDER BY date_text ASC, first_seen DESC"
+    )
+    rows = cur.fetchall()
+    return rows
+
+
+# ----------------------------------------------------------------------------
+# 開催日フィルタ（更新日から1か月分だけを表示）
+# ----------------------------------------------------------------------------
+
+_FULL_DATE_RE = re.compile(r"(\d{4})\s*[年/.\-]\s*(\d{1,2})\s*[月/.\-]\s*(\d{1,2})")
+_SHORT_DATE_RE = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+_SHORT_SLASH_DATE_RE = re.compile(r"(?<!\d)(\d{1,2})\s*/\s*(\d{1,2})(?!\d)")
+
+
+def parse_date_range(date_text: str, today: date):
+    """date_text（形式は情報源ごとにバラバラ）から開催期間の (開始日, 終了日) を推定する。
+    範囲表記（〜, ～, ・ 等で複数日付を含む）の場合は最初と最後の日付を採用。
+    年が書かれていない場合は、今日から60日以上前になってしまうなら翌年とみなす
+    （年末年始をまたぐケースへの対応）。
+    解析できない場合は (None, None) を返す。"""
+    if not date_text:
+        return None, None
+
+    # 「2026年9月30日〜10月6日」のように、2つ目以降の日付だけ年が省略される
+    # 表記に対応するため、フル表記(年あり)・短縮表記(年なし)の両方を必ず探す。
+    # フル表記の範囲と重なる短縮表記(例:"9月30日"の一部としての"30日"由来の誤検出)は
+    # 除外しつつ、フル表記の外側にある短縮表記(例:後半の"10月6日")だけを追加する。
+    matches = []
+    full_spans = []
+    for m in _FULL_DATE_RE.finditer(date_text):
+        matches.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
+        full_spans.append(m.span())
+
+    def _inside_full_span(pos: int) -> bool:
+        return any(start <= pos < end for start, end in full_spans)
+
+    for m in _SHORT_DATE_RE.finditer(date_text):
+        if _inside_full_span(m.start()):
+            continue  # フル表記の一部として既に拾っている日付なので重複させない
+        matches.append((None, int(m.group(1)), int(m.group(2))))
+
+    # 「2026/9/11〜9/22」のように、範囲の後半が年省略のスラッシュ形式（9/22）で
+    # 書かれるケースにも対応する（"月","日"を使わないため上のSHORT_DATE_REでは拾えない）。
+    for m in _SHORT_SLASH_DATE_RE.finditer(date_text):
+        if _inside_full_span(m.start()):
+            continue
+        matches.append((None, int(m.group(1)), int(m.group(2))))
+
+    # 「9月23日〜28日」のように、後半が「日」だけ省略される日本語表記にも対応。
+    # 前半の月・年を引き継いで終了日を生成する。
+    day_only_matches = []
+    for m in re.finditer(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日[^0-9]{0,20}[〜～\-~・]\s*(\d{1,2})\s*日", date_text):
+        # 前半の「9月23日」が年付きフル日付のspan内でも、後半の「28日」は
+        # 別の日付として必要なので、ここではspan除外しない。
+        mo, d1, d2 = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        year_match = re.search(r"(\d{4})\s*年\s*" + str(mo) + r"\s*月", date_text[max(0, m.start()-10):m.start()+10])
+        y = int(year_match.group(1)) if year_match else None
+        day_only_matches.append((y, mo, d2))
+    matches.extend(day_only_matches)
+
+    dates = []
+    for y, mo, d in matches:
+        yy = y if y else today.year
+        try:
+            dt = date(yy, mo, d)
+        except ValueError:
+            continue
+        if y is None and dt < today - timedelta(days=60):
+            dt = date(yy + 1, mo, d)
+        dates.append(dt)
+
+    if not dates:
+        return None, None
+    return min(dates), max(dates)
+
+
+def filter_within_month(rows: list, today: date, days: int = 30) -> list:
+    """開催日が「今日 〜 今日+days日」に重なるものだけを残す。
+    日付が読み取れなかった項目は、情報を落とさないよう念のため残す。"""
+    window_end = today + timedelta(days=days)
+    kept = []
+    for row in rows:
+        date_text = row[2]
+        start, end = parse_date_range(date_text, today)
+        if start is None:
+            # 「公開日しかないブログ記事」を開催イベントとして表示しない。
+            # 開催期間を取得できないイベントは、公開日を開催日として代用せず除外する。
+            source = row[0] or ""
+            published_date = row[3] or ""
+            if published_date and ("SHOP BLOG" in source or "ブログ" in source):
+                continue
+            kept.append(row)  # その他の情報源は従来どおり残す
+            continue
+        if end is None:
+            end = start
+        if end >= today and start <= window_end:
+            kept.append(row)
+    return kept
+
+
+def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> tuple:
+    """開催中・近日開催と開始前を分離する。
+    開催終了日が今日以降なら必ず開催中側に残す。開始前は開始日がsoon_days日を超えて先のものだけ。
+    「まだそれより先」のものに分ける。ページを分けて表示するために使う。
+    開始が近いイベントを「開始前」ページに埋もれさせず、早めに「開催中」ページ側で
+    目に触れるようにする（開始日ちょうどsoon_days日後までを含み、それより先は開始前ページへ）。
+    ただし映画は日付判定が不安定なため、カテゴリそのもので強制的に振り分ける
+    （🎬映画=上映中は常に開催中ページへ、🍿公開予定映画は常に開始前ページへ）。"""
+    started, upcoming = [], []
+    soon_cutoff = today + timedelta(days=soon_days)
+    for row in rows:
+        date_text = row[2]
+        cats = (row[6] or "").split(",")
+        if "🍿 公開予定映画" in cats:
+            upcoming.append(row)
+            continue
+        if "🎬 映画" in cats:
+            started.append(row)
+            continue
+        start, end = parse_date_range(date_text, today)
+        if start is None:
+            # 開催日不明は既存の情報を落とさないため開催中側に残す。
+            started.append(row)
+            continue
+        if end is not None and end >= today:
+            # 今日まで/今日以降に終了するものは、開始済みなら開催中側。
+            if start <= today:
+                started.append(row)
+                continue
+        if start > soon_cutoff:
+            upcoming.append(row)
+        else:
+            started.append(row)
+    return started, upcoming
+
+
+def infer_tags_from_source(source: str) -> list:
+    """DBには生のtags(カテゴリタグ)は保存していないため、再分類時はsource名から推測する。
+    （百貨店の催事情報は情報源そのものが「デパート催事」の証拠になる）"""
+    tags = []
+    if source and "催事" in source:
+        tags.append("デパート催事")
+    if source and "公式逆引き" in source:
+        tags.extend(["アニメ・漫画・ゲーム公式", "公式イベント", "公式逆引き収集"])
+    if source and ("アニメ" in source or "ゲーム" in source):
+        tags.append("アニメ・漫画系")
+    # ポップアップは「情報源名がポップアップだから」という理由だけでは付与しない。
+    # 旧データを再分類するときも、タイトル等に実際のPOPUP表記がある場合だけ
+    # classify()側で判定する。これにより「○○施設(ポップアップ)」という
+    # コレクター名だけを根拠に無関係な記事がPOPUP化するのを防ぐ。
+    return list(dict.fromkeys(tags))
+
+
+def reclassify_all(conn: sqlite3.Connection) -> None:
+    """保存済みイベントを最新分類で再判定する。
+    既存DBにはtagsを保存していないため、既存categoriesを分類材料として保持し、
+    再分類で「開催中」「映画」「催事」等が消えないようにする。SQLiteロック時は待機して再試行。
+    """
+    cur = conn.execute("SELECT url, source, title, date_text, place, categories FROM events")
+    rows = cur.fetchall()
+    updated = 0
+    for url, source, title, date_text, place, old_categories in rows:
+        existing_categories = [c for c in (old_categories or '').split(',') if c]
+        tmp = EventItem(source=source or "", title=title or "", url=url,
+                         date_text=date_text or "", place=place or "",
+                         tags=infer_tags_from_source(source),
+                         categories=existing_categories)
+        cats = enforce_category_rules(existing_categories + classify(tmp))
+        for attempt in range(5):
+            try:
+                conn.execute("UPDATE events SET categories = ? WHERE url = ?", (",".join(cats), url))
+                updated += 1
+                break
+            except sqlite3.OperationalError as e:
+                if "locked" not in str(e).lower():
+                    raise
+                conn.rollback()
+                wait = 1.0 * (attempt + 1)
+                log.warning(f"SQLiteロック中: 再試行 {attempt + 1}/5 ({wait:.0f}秒待機)")
+                time.sleep(wait)
+        else:
+            log.error("SQLiteロックが解除されないため、再分類を中止します。次回実行時に再試行します。")
+            return
+    conn.commit()
+    log.info(f"既存データ {updated} 件を最新の分類基準で再判定しました")
+
+
+# ----------------------------------------------------------------------------
+# 表示順
+# ----------------------------------------------------------------------------
+
+def sort_key_for_display(row, today: date):
+    """開催開始日が早い順に並べる。日付を解析できない情報は最後へ。"""
+    date_text = row[2] or ""
+    start, _ = parse_date_range(date_text, today)
+    return (start is None, start or date.max, (row[1] or "").lower())
+
+
+# ----------------------------------------------------------------------------
+# HTMLレポート生成（ブラウザで確認する用）
+# ----------------------------------------------------------------------------
+
+def escape_html(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _dedupe_display_rows(rows: list) -> list:
+    """同一イベントを複数の公式ソースから拾った場合、表示上は1件に統合する。
+    同一性はタイトル・開催日・会場を正規化して判定し、情報源リンクは統合する。
+    """
+    merged = {}
+    for row in rows:
+        source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json = row
+        def norm_key(v):
+            return re.sub(r"\s+", "", normalize(v or "")).lower()
+        title_key = norm_key(title)
+        date_key = norm_key(date_text)
+        place_key = norm_key(place)
+        if not title_key:
+            key = ("url", norm_key(url))
+        else:
+            # 同一タイトル・同一会場なら、片方だけ開催日を取得できた場合でも統合。
+            # また、同一タイトル・同一開催日なら会場表記の揺れがあっても統合する。
+            key = None
+            for existing_key, existing in merged.items():
+                if existing_key[0] != title_key:
+                    continue
+                existing_date = norm_key(existing[2])
+                existing_place = norm_key(existing[4])
+                same_place = bool(place_key and existing_place and place_key == existing_place)
+                same_date = bool(date_key and existing_date and date_key == existing_date)
+                one_date_missing_same_place = same_place and (not date_key or not existing_date)
+                if same_place or same_date or one_date_missing_same_place:
+                    key = existing_key
+                    break
+            if key is None:
+                key = (title_key, date_key, place_key)
+        if key not in merged:
+            merged[key] = [source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json]
+            continue
+        base = merged[key]
+        # カテゴリは両ソースの判定を統合
+        cat_list = list(dict.fromkeys((base[6] or "").split(",") + (cats or "").split(",")))
+        cat_list = [c for c in cat_list if c]
+        # アニメ・ゲーム系POPUPなら通常POPUPを表示しない
+        if "🎮 アニメ・ゲーム関連ポップアップストア" in cat_list:
+            cat_list = [c for c in cat_list if c != "🛍️ ポップアップストア"]
+        base[6] = ",".join(enforce_category_rules(cat_list))
+        # 情報源はまとめ、リンクも統合
+        sources = [x.strip() for x in (base[0] or "").split(" / ") if x.strip()] + [x.strip() for x in (source or "").split(" / ") if x.strip()]
+        base[0] = " / ".join(dict.fromkeys(sources))
+        try:
+            old_links = json.loads(base[10]) if base[10] else []
+        except Exception:
+            old_links = []
+        try:
+            new_links = json.loads(links_json) if links_json else []
+        except Exception:
+            new_links = []
+        all_links = old_links + new_links
+        seen_urls = set()
+        unique_links = []
+        for link in all_links:
+            lu = link.get("url", "") if isinstance(link, dict) else ""
+            if not lu or lu in seen_urls:
+                continue
+            seen_urls.add(lu)
+            unique_links.append(link)
+        if unique_links:
+            base[10] = json.dumps(unique_links, ensure_ascii=False)
+        if not base[3] and published_date:
+            base[3] = published_date
+        if not base[9] and blurb:
+            base[9] = blurb
+    return list(merged.values())
+
+
+def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> str:
+    if page_kind == "upcoming":
+        page_title_suffix = "（開始前）"
+        page_switch_link = '<a href="index.html">📍 開催中のイベント一覧はこちら →</a>'
+        category_order = [c for c in CATEGORY_ORDER if c != "🎬 映画"]
+    else:
+        page_title_suffix = "（開催中）"
+        page_switch_link = '<a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a>'
+        category_order = [c for c in CATEGORY_ORDER if c != "🍿 公開予定映画"]
+
+    # 同一イベントを複数の公式ソースから取得しても、表示は1カードに統合する。
+    rows = _dedupe_display_rows(rows)
+
+    # カテゴリごとにグループ化
+    grouped = {label: [] for label in category_order}
+    for source, title, date_text, published_date, place, fee, cats, url, first_seen, blurb, links_json in rows:
+        cat_list = cats.split(",") if cats else []
+        for c in cat_list:
+            if c in grouped:
+                grouped[c].append((source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json))
+
+    sections_html = ""
+    today_date = datetime.strptime(today, "%Y-%m-%d").date()
+
+    for label in category_order:
+        items = grouped[label]
+        if not items:
+            sections_html += f'<h2>{label}</h2><p class="empty">現在、該当する情報はありません。</p>'
+            continue
+
+        # ★開催日順（開催開始日が早いもの→日付不明は最後）
+        items.sort(key=lambda row: sort_key_for_display(row, today_date))
+
+        sections_html += f'<h2>{label} <span class="count">({len(items)}件)</span></h2><div class="cards">'
+        for source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json in items:
+            is_new = " new" if first_seen == today else ""
+            badge = '<span class="badge">NEW</span>' if first_seen == today else ""
+
+            if page_kind != "upcoming":
+                item_start, _ = parse_date_range(date_text, today_date)
+                if item_start is not None and item_start > today_date:
+                    badge += '<span class="badge badge-soon">まもなく開催</span>'
+
+            try:
+                links = json.loads(links_json) if links_json else []
+            except Exception:
+                links = []
+            if not links:
+                links = [{"label": source, "url": url}]
+            links_html = "".join(
+                f'<a class="card-link" href="{escape_html(l.get("url", url))}" target="_blank" rel="noopener">'
+                f'{escape_html(l.get("label", source))} ↗</a>'
+                for l in links
+            )
+
+            sections_html += f"""
+            <div class="card{is_new}">
+              {badge}
+              <div class="card-title">{escape_html(title)}</div>
+              {'<div class="card-blurb">✨ ' + escape_html(blurb) + '</div>' if blurb else ''}
+              <div class="card-meta">
+                {'📅 開催: ' + escape_html(date_text) + '<br>' if date_text else ''}
+                {'📝 掲載: ' + escape_html(published_date) + '<br>' if published_date else ''}
+                {'📍 ' + escape_html(place) + '<br>' if place else ''}
+                {'💰 ' + escape_html(fee) + '<br>' if fee else ''}
+                <span class="source">{escape_html(source)}</span>
+              </div>
+              <div class="card-links">{links_html}</div>
+            </div>
+            """
+        sections_html += "</div>"
+
+    html = f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>札幌市中央区 情報収集レポート</title>
+<style>
+  :root {{
+    --bg: #12131a;
+    --panel: #1b1d29;
+    --accent: #ff6b6b;
+    --accent2: #4ecdc4;
+    --text: #eaeaf0;
+    --muted: #9a9ab0;
+    --border: #2a2c3d;
+  }}
+  * {{ box-sizing: border-box; }}
+  body {{
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }}
+  header {{
+    max-width: 980px;
+    margin: 0 auto 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }}
+  h1 {{
+    font-size: 22px;
+    margin: 0 0 6px;
+  }}
+  .updated {{
+    color: var(--muted);
+    font-size: 13px;
+  }}
+  .page-switch {{
+    margin-top: 10px;
+  }}
+  .page-switch a {{
+    display: inline-block;
+    color: var(--accent2);
+    text-decoration: none;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }}
+  .page-switch a:hover {{
+    border-color: var(--accent2);
+  }}
+  main {{
+    max-width: 980px;
+    margin: 0 auto;
+  }}
+  h2 {{
+    font-size: 18px;
+    margin: 28px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }}
+  .count {{
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: normal;
+  }}
+  .empty {{
+    color: var(--muted);
+    font-size: 14px;
+  }}
+  .cards {{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }}
+  .card {{
+    position: relative;
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }}
+  .card.new {{
+    border-color: var(--accent);
+  }}
+  .card-links {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }}
+  .card-link {{
+    display: inline-block;
+    font-size: 11.5px;
+    color: var(--accent2);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    transition: border-color 0.15s, color 0.15s;
+  }}
+  .card-link:hover {{
+    border-color: var(--accent2);
+    color: #fff;
+  }}
+  .badge {{
+    position: absolute;
+    top: -8px;
+    right: 10px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+  }}
+  .badge-soon {{
+    right: auto;
+    left: 10px;
+    background: var(--accent2);
+    color: #12131a;
+  }}
+  .card-title {{
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    line-height: 1.4;
+  }}
+  .card-blurb {{
+    font-size: 12.5px;
+    color: var(--accent2);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }}
+  .card-meta {{
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+  }}
+  .source {{
+    display: inline-block;
+    margin-top: 4px;
+    color: var(--accent2);
+    font-size: 11px;
+  }}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏙️ 札幌市中央区 情報収集レポート{page_title_suffix}</h1>
+  <div class="updated">最終更新: {today}　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: {new_count}件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="page-switch">{page_switch_link}</div>
+</header>
+<main>
+{sections_html}
+</main>
+</body>
+</html>
+"""
+    return html
+
+
+# ----------------------------------------------------------------------------
+# メイン処理
+# ----------------------------------------------------------------------------
+
+
+def _manual_title_key(title: str) -> str:
+    """手動登録と自動取得を同一イベントとして照合するためのタイトルキー。"""
+    t = normalize(title or "").lower()
+    # 手動登録側にある説明用の括弧書き（正式名称の読み仮名など）は無視する。
+    t = re.sub(r"（[^）]*）|\([^)]*\)", "", t)
+    t = re.sub(r"[^0-9a-zぁ-んァ-ヶ一-龯]+", "", t)
+    return t
+
+
+def delete_replaced_manual_event(conn: sqlite3.Connection, item: EventItem) -> int:
+    """自動取得できたイベントに対応する旧手動登録行をDBから削除する。"""
+    key = _manual_title_key(item.title)
+    if not key:
+        return 0
+    cur = conn.execute("SELECT url, title FROM events WHERE source = ?", ("手動登録(年次フェス)",))
+    stale_urls = [url for url, title in cur.fetchall() if _manual_title_key(title) == key]
+    for url in stale_urls:
+        conn.execute("DELETE FROM events WHERE url = ?", (url,))
+    if stale_urls:
+        log.info(f"自動取得へ移行: 手動登録 {len(stale_urls)}件を削除 → {item.title}")
+    return len(stale_urls)
+
+def main() -> None:
+    today = datetime.now().strftime("%Y-%m-%d")
+    log.info("=== 札幌市中央区 情報収集 開始 ===")
+
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
+    conn.execute("PRAGMA busy_timeout = 30000")
+    conn.execute("PRAGMA journal_mode = WAL")
+    init_db(conn)
+    migrate_legacy_manual_event_urls(conn)  # 旧URL・旧会期のCoffee Pairing手動登録を先に除去
+    cleanup_stale_manual_urls(conn)  # URLを変更した手動登録イベントの古い重複を削除
+    reclassify_all(conn)  # 分類基準が更新されている場合に備え、既存データも最新基準で判定し直す
+
+    new_items: list[EventItem] = []
+    total_checked = 0
+    total_matched = 0
+    ai_calls = 0
+
+    # 手動登録候補と自動取得の対応関係。自動取得できたものは手動登録を使わない。
+    auto_replaced_manual_keys = set()
+
+    for name, collector_fn in SOURCES.items():
+        log.info(f"--- 情報源: {name} ---")
+        try:
+            for item in collector_fn():
+                total_checked += 1
+                # 404/410になった旧URLは、同一公式サイト内を検索して新URLへ自動修復。
+                old_item_url = item.url
+                item = repair_event_url(item)
+                if item.url != old_item_url:
+                    migrate_repaired_db_url(conn, old_item_url, item.url)
+                item.categories = classify(item)  # まずキーワードで一次判定（AI無効時/失敗時の土台にもなる）
+                if AI_ENABLED:
+                    ai_cats, ai_blurb = ai_judge(item)
+                    if ai_cats is not None:
+                        # 決定論的な共通分類をAI回答で消さない。
+                        # 特に「展示会/POPUP」のような明確なカテゴリは常に保持する。
+                        item.categories = enforce_category_rules(item.categories + ai_cats)
+                        item.blurb = ai_blurb or ""
+                        ai_calls += 1
+                if not item.categories:
+                    continue  # 飲食/音楽ライブ/アニメ/デパート催事 のどれにも該当しない情報は除外
+
+                # 手動登録は「自動取得できなかった場合だけ」のフォールバック。
+                # manualソースより前に自動ソースが見つけていたら、手動候補はスキップする。
+                if name == "manual" and _manual_title_key(item.title) in auto_replaced_manual_keys:
+                    log.info(f"手動登録をスキップ（自動取得済み）: {item.title}")
+                    continue
+
+                total_matched += 1
+                if upsert_event(conn, item, today):
+                    new_items.append(item)
+
+                # 自動取得が成功した4件は、同タイトルの旧手動登録をDBから除去する。
+                if name != "manual":
+                    manual_key = _manual_title_key(item.title)
+                    manual_titles = {
+                        _manual_title_key("2026さっぽろオータムフェスト"),
+                        _manual_title_key("桑田佳祐 夏祭りツアー 2026 supported by カンロ 北海道公演"),
+                        _manual_title_key("映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映"),
+                        _manual_title_key("Coffee Pairing Festival 2026（コーヒーペアリングフェスティバル2026）"),
+                    }
+                    if manual_key in manual_titles:
+                        auto_replaced_manual_keys.add(manual_key)
+                        delete_replaced_manual_event(conn, item)
+        except Exception as e:
+            log.error(f"{name} の収集中にエラー: {e}")
+
+    # 公式イベントの最終同期。収集経路や旧DBの残骸に左右されず、
+    # Coffee Pairing Festival 2026 が必ず掲載対象になるようにする。
+    ensure_coffee_pairing_festival(conn, today)
+    conn.commit()
+
+    # 今回の新着分だけをCSVに保存
+    if new_items:
+        out_path = DATA_DIR / f"new_{today}.csv"
+        with out_path.open("w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            writer.writerow(["categories", "source", "title", "date_text(開催日)", "published_date(公開日)", "place", "fee", "url"])
+            for it in new_items:
+                writer.writerow([
+                    "/".join(it.categories), it.source, it.title, it.date_text, it.published_date, it.place, it.fee, it.url
+                ])
+        log.info(f"新着 {len(new_items)} 件を保存しました → {out_path}")
+    else:
+        log.info("新着情報はありませんでした。")
+
+    # HTMLレポートを常に最新化（開催日が今日から60日以内のものだけ表示）
+    rows = fetch_all_current(conn)
+    today_date = datetime.now().date()
+    rows = filter_within_month(rows, today_date, days=60)  # 公開予定映画等も見えるよう2ヶ月分表示
+    started_rows, upcoming_rows = split_started_and_upcoming(rows, today_date)
+
+    html_started = build_html(started_rows, today, len(new_items), page_kind="started")
+    HTML_PATH.write_text(html_started, encoding="utf-8")
+    log.info(f"HTMLレポート(開催中)を更新しました → {HTML_PATH}")
+
+    html_upcoming = build_html(upcoming_rows, today, len(new_items), page_kind="upcoming")
+    UPCOMING_HTML_PATH.write_text(html_upcoming, encoding="utf-8")
+    log.info(f"HTMLレポート(開始前)を更新しました → {UPCOMING_HTML_PATH}")
+
+    conn.close()
+
+    log.info(f"チェック件数(延べ): {total_checked} / 対象カテゴリ一致: {total_matched} / 新着: {len(new_items)} / AI判定利用: {ai_calls}件{'(有効)' if AI_ENABLED else '(無効:GEMINI_API_KEY未設定)'}")
+    log.info("=== 完了 ===")
+
+
+if __name__ == "__main__":
+    main()
