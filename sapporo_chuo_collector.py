@@ -2164,8 +2164,12 @@ def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
         title="映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
         url=official_url,
         date_text=f"{datetime.now().year}年9月18日(金)～",
-        place="札幌市内の映画館（中央区）",
+        place="ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中",
         tags=["映画上映中", "アニメ映画", "公式イベント"],
+        links=[
+            {"label": "ローソン・ユナイテッドシネマ札幌", "url": "https://www.unitedcinemas.jp/sapporo/film.php?movie=13937"},
+            {"label": "TOHOシネマズすすきの", "url": "https://hlo.tohotheater.jp/net/schedule/089/TNPI2000J01.do"},
+        ],
     )
     log.info("超かぐや姫！(公式): 復活上映を自動取得")
 
@@ -2194,8 +2198,12 @@ def collect_manual_events() -> Iterable[EventItem]:
         {
             "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
             "date_text": "2026年9月18日(金)〜",
-            "place": "札幌市内の映画館（中央区）",
+            "place": "ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中",
             "url": "https://www.cho-kaguyahime.com/theater/",
+            "links": [
+                {"label": "ローソン・ユナイテッドシネマ札幌", "url": "https://www.unitedcinemas.jp/sapporo/film.php?movie=13937"},
+                {"label": "TOHOシネマズすすきの", "url": "https://hlo.tohotheater.jp/net/schedule/089/TNPI2000J01.do"},
+            ],
             "release_date": date(2026, 9, 18),  # この日を迎えると自動的に「映画上映中」に切り替わる
         },
         # 他の年次フェスもここに追加できます。例:
@@ -2226,6 +2234,7 @@ def collect_manual_events() -> Iterable[EventItem]:
             date_text=ev.get("date_text", ""),
             place=ev.get("place", ""),
             tags=tags,
+            links=ev.get("links", []),
         )
     log.info(f"手動登録候補: {len(manual_events)}件（自動取得できない場合のみフォールバック）")
 
@@ -2310,7 +2319,7 @@ ANIME_MOVIE_HINTS = [
     "名探偵コナン", "鬼滅の刃", "呪術廻戦", "ワンピース", "ガンダム", "五等分の花嫁",
     "推しの子", "スパイファミリー", "スパイ×ファミリー", "ヒーローアカデミア", "チェンソーマン",
     "薬屋のひとりごと", "プリキュア", "ウルトラマン", "幻想水滸伝", "パウ・パトロール",
-    "ミニオンズ", "まどか", "マギカ",
+    "ミニオンズ", "まどか", "マギカ", "超かぐや姫",
 ]
 
 def _extract_title_from_schedule_page(url: str) -> Optional[str]:
