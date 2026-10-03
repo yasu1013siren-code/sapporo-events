@@ -2704,13 +2704,30 @@ def parse_date_range(date_text: str, today: date):
     matches.extend(day_only_matches)
 
     dates = []
+    # 範囲内に明示年がある場合、後半の年省略日付はその年を引き継ぐ。
+    # 例: 2024年7月12日〜7月29日 → 後半も2024年（現在年/翌年にしない）。
+    explicit_dates = [(y, mo, d) for y, mo, d in matches if y is not None]
+    base_year = explicit_dates[0][0] if explicit_dates else None
+    base_month = explicit_dates[0][1] if explicit_dates else None
+
     for y, mo, d in matches:
-        yy = y if y else today.year
+        if y is not None:
+            yy = y
+        elif base_year is not None:
+            yy = base_year
+            # 12月→1月のような年またぎ範囲だけ翌年にする。
+            if base_month is not None and base_month >= 10 and mo <= 3:
+                yy += 1
+        else:
+            yy = today.year
+
         try:
             dt = date(yy, mo, d)
         except ValueError:
             continue
-        if y is None and dt < today - timedelta(days=60):
+
+        # 文中に年が一度も無い場合だけ、従来の年末年始補正を使う。
+        if y is None and base_year is None and dt < today - timedelta(days=60):
             dt = date(yy + 1, mo, d)
         dates.append(dt)
 
@@ -2923,6 +2940,22 @@ def _dedupe_display_rows(rows: list) -> list:
 
 
 def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> str:
+    # 最終防衛ライン: HTML生成直前にも開催日を再検証する。
+    # DBや別経路から古い行が渡ってきても、終了済み・日付解析不能は表示しない。
+    today_date = datetime.strptime(today, "%Y-%m-%d").date()
+    safe_rows = []
+    for row in rows:
+        date_text = row[2] or ""
+        start, end = parse_date_range(date_text, today_date)
+        if start is None:
+            continue
+        if end is None:
+            end = start
+        if end < today_date:
+            continue
+        safe_rows.append(row)
+    rows = safe_rows
+
     if page_kind == "upcoming":
         page_title_suffix = "（開始前）"
         page_switch_link = '<a href="index.html">📍 開催中のイベント一覧はこちら →</a>'
@@ -2944,7 +2977,6 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
                 grouped[c].append((source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json))
 
     sections_html = ""
-    today_date = datetime.strptime(today, "%Y-%m-%d").date()
 
     for label in category_order:
         items = grouped[label]
