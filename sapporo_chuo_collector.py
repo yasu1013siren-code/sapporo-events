@@ -2743,10 +2743,17 @@ def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     kept = []
     for row in rows:
         date_text = row[2]
+        cats = (row[6] or "").split(",")
+
+        # 映画はカテゴリ側で上映中/公開予定を管理しているため、
+        # 通常イベントの日付フィルタでは落とさない。
+        if "🎬 映画" in cats or "🍿 公開予定映画" in cats:
+            kept.append(row)
+            continue
+
         start, end = parse_date_range(date_text, today)
         if start is None:
-            # 「判断できないから残す」という旧安全策は廃止。
-            # 開催日を解析できない項目は表示対象から除外する。
+            # 通常イベントは「判断できないから残す」という旧安全策を使わない。
             continue
         if end is None:
             end = start
@@ -2946,6 +2953,14 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
     safe_rows = []
     for row in rows:
         date_text = row[2] or ""
+        cats = (row[6] or "").split(",")
+
+        # 映画は上映状況カテゴリを優先する。日付文字列が解析できなくても
+        # 「🎬 映画」「🍿 公開予定映画」はここでは除外しない。
+        if "🎬 映画" in cats or "🍿 公開予定映画" in cats:
+            safe_rows.append(row)
+            continue
+
         start, end = parse_date_range(date_text, today_date)
         if start is None:
             continue
