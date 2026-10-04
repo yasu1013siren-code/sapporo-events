@@ -1,0 +1,18 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {BUSINESSES,AREAS} from '@/server/intake.mjs';
+type Identity={id:string;key:string};type Receipt={trial_number:string;start_date:string;end_date:string};
+export default function SignupForm(){
+ const [identity,setIdentity]=useState<Identity|null>(null),[receipt,setReceipt]=useState<Receipt|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[link,setLink]=useState('');
+ useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('pro-trial-registration')||'null');if(saved?.id&&saved?.key){setIdentity({id:saved.id,key:saved.key});if(saved.receipt){setReceipt(saved.receipt);setLink(`${location.origin}/survey#id=${saved.id}&key=${saved.key}`)}}}catch{}},[]);
+ async function submit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);setError('');const form=event.currentTarget,fields=Object.fromEntries(new FormData(form));
+  let who=identity;if(!who){who={id:crypto.randomUUID(),key:[...crypto.getRandomValues(new Uint8Array(32))].map(x=>x.toString(16).padStart(2,'0')).join('')};setIdentity(who)}
+  try{localStorage.setItem('pro-trial-registration',JSON.stringify(who))}catch{}
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+  try{const response=await fetch('/api/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...fields,...who,consent:fields.consent==='on'}),signal:controller.signal});const result=await response.json() as Receipt & {ok:boolean;error?:string};if(!response.ok||!result.ok)throw new Error(result.error||'受付に保存できませんでした。');setReceipt(result);setLink(`${location.origin}/survey#id=${who.id}&key=${who.key}`);try{localStorage.setItem('pro-trial-registration',JSON.stringify({...who,receipt:result}))}catch{}}
+  catch(e){setError(e instanceof Error&&e.name!=='AbortError'?e.message:'保存結果を確認できませんでした。入力を残して再送信してください。')}
+  finally{clearTimeout(timeout);setBusy(false)}
+ }
+ if(receipt)return <div className="success" role="status"><h3>申し込みを受け付けました</h3><p><strong>{receipt.trial_number}</strong><br/>試用期間：{receipt.start_date}〜{receipt.end_date}</p><p className="small">自動課金はありません。下の回答リンクを保存してください。同じリンクから回答の修正と申し込みの取り消しもできます。</p><label>専用の回答リンク<input className="token" readOnly value={link} onFocus={e=>e.currentTarget.select()}/></label><div className="actions"><a className="button" href="/demo.html">使い方・機能を試す</a><a href={link}>アンケートへ</a></div><p className="small muted">受付情報は運営側に保存されました。自動メールは送信していません。回答リンクは他の方に共有しないでください。</p></div>;
+ return <form onSubmit={submit}><div className="grid"><label className="wide">店舗名<input name="store" autoComplete="organization" maxLength={120} required placeholder="例：札幌○○カフェ"/></label><label>業態<select name="business" required defaultValue=""><option value="" disabled>選んでください</option>{BUSINESSES.map(v=><option key={v}>{v}</option>)}</select></label><label>店舗の地域<select name="area" required defaultValue=""><option value="" disabled>選んでください</option>{AREAS.map(v=><option key={v}>{v}</option>)}</select></label><label className="wide">連絡先メール<input name="email" type="email" autoComplete="email" maxLength={254} required placeholder="お店で確認できるメールアドレス"/></label></div><div className="hp" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div><label className="check"><input name="consent" type="checkbox" required/><span>試用は無料で、自動課金がないことと、<a href="/privacy" target="_blank" rel="noopener">入力情報の取り扱い</a>を確認しました。</span></label><button type="submit" disabled={busy}>{busy?'保存しています…':'2週間の無料試用を申し込む'}</button><p className="status error" role="status" aria-live="polite">{error}</p></form>
+}
