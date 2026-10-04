@@ -112,7 +112,7 @@ import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -2437,7 +2437,7 @@ def collect_upcoming_movies() -> Iterable[EventItem]:
     明記されているため、タイトルのキーワード判定に加えてジャンルに「アニメ」が
     含まれるかどうかでもアニメ判定を行う（キーワード判定より確実）。
     全国版のリストのため、必ずしも札幌の劇場での上映が確定しているとは限らない点に注意。"""
-    today = datetime.now().date()
+    today = datetime.now(timezone(timedelta(hours=9))).date()
     window_end = today + timedelta(days=60)
 
     # 対象期間をカバーする年月を列挙（当月から、window_endの月まで）
@@ -2472,7 +2472,7 @@ def collect_upcoming_movies() -> Iterable[EventItem]:
                     release_date = date(ey, em, ed)
                 except Exception:
                     continue
-                if release_date < today or release_date > window_end:
+                if release_date <= today or release_date > window_end:
                     continue
                 if title in upcoming:
                     continue
@@ -2745,12 +2745,22 @@ def parse_date_range(date_text: str, today: date):
     return min(dates), max(dates)
 
 
+def is_future_movie_row(row, today: date) -> bool:
+    """Nationwide release dates do not confirm screening in Sapporo."""
+    if "🍿 公開予定映画" not in (row[6] or "").split(","):
+        return True
+    release_date, _ = parse_date_range(row[2], today)
+    return release_date is not None and release_date > today
+
+
 def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     """開催日が「今日 〜 今日+days日」に重なるものだけを残す。
     開催日を解析できない項目は表示しない。公開日を開催日の代用にもしない。"""
     window_end = today + timedelta(days=days)
     kept = []
     for row in rows:
+        if not is_future_movie_row(row, today):
+            continue
         date_text = row[2]
         cats = (row[6] or "").split(",")
 
@@ -2781,6 +2791,8 @@ def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> t
     started, upcoming = [], []
     soon_cutoff = today + timedelta(days=soon_days)
     for row in rows:
+        if not is_future_movie_row(row, today):
+            continue
         date_text = row[2]
         cats = (row[6] or "").split(",")
         if "🍿 公開予定映画" in cats:
@@ -2899,8 +2911,7 @@ def _dedupe_display_rows(rows: list) -> list:
         if not title_key:
             key = ("url", norm_key(url))
         else:
-            # 同一タイトル・同一会場なら、片方だけ開催日を取得できた場合でも統合。
-            # また、同一タイトル・同一開催日なら会場表記の揺れがあっても統合する。
+            # 別日・別会場の公演を潰さないため、日付と会場の両方の一致が必要。
             key = None
             for existing_key, existing in merged.items():
                 if existing_key[0] != title_key:
@@ -2909,8 +2920,7 @@ def _dedupe_display_rows(rows: list) -> list:
                 existing_place = norm_key(existing[4])
                 same_place = bool(place_key and existing_place and place_key == existing_place)
                 same_date = bool(date_key and existing_date and date_key == existing_date)
-                one_date_missing_same_place = same_place and (not date_key or not existing_date)
-                if same_place or same_date or one_date_missing_same_place:
+                if same_place and same_date:
                     key = existing_key
                     break
             if key is None:
@@ -2961,6 +2971,8 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
     today_date = datetime.strptime(today, "%Y-%m-%d").date()
     safe_rows = []
     for row in rows:
+        if not is_future_movie_row(row, today_date):
+            continue
         date_text = row[2] or ""
         cats = (row[6] or "").split(",")
 
@@ -3247,7 +3259,7 @@ def delete_replaced_manual_event(conn: sqlite3.Connection, item: EventItem) -> i
     return len(stale_urls)
 
 def main() -> None:
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
     log.info("=== 札幌市中央区 情報収集 開始 ===")
 
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
@@ -3334,7 +3346,7 @@ def main() -> None:
 
     # HTMLレポートを常に最新化（開催日が今日から60日以内のものだけ表示）
     rows = fetch_all_current(conn)
-    today_date = datetime.now().date()
+    today_date = date.fromisoformat(today)
     rows = filter_within_month(rows, today_date, days=60)  # 公開予定映画等も見えるよう2ヶ月分表示
     started_rows, upcoming_rows = split_started_and_upcoming(rows, today_date)
 
@@ -3347,6 +3359,14 @@ def main() -> None:
     log.info(f"HTMLレポート(開始前)を更新しました → {UPCOMING_HTML_PATH}")
 
     conn.close()
+
+    # PRO is an additive read-only export. Free reports remain available on failure.
+    try:
+        from pro_beta import generate_pro
+        payload = generate_pro(DB_PATH, DATA_DIR / "pro.html", today_date)
+        log.info(f"飲食店PRO βを更新: {len(payload['events'])}件 → {DATA_DIR / 'pro.html'}")
+    except Exception:
+        log.exception("飲食店PRO βの更新に失敗（無料レポートは更新済み）")
 
     log.info(f"チェック件数(延べ): {total_checked} / 対象カテゴリ一致: {total_matched} / 新着: {len(new_items)} / AI判定利用: {ai_calls}件{'(有効)' if AI_ENABLED else '(無効:GEMINI_API_KEY未設定)'}")
     log.info("=== 完了 ===")
