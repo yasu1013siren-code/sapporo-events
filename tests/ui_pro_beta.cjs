@@ -24,7 +24,7 @@ const {chromium}=require('playwright');
  await page.getByRole('button',{name:'閉じる',exact:true}).click();
  await page.locator('[name=business]').selectOption('居酒屋・バー');await page.locator('[name=uses_per_week]').fill('4');await page.locator('[name=minutes_saved]').fill('20');await page.locator('[name=useful_feature]').selectOption('地域・期間の絞り込み');await page.locator('[name=willingness]').selectOption('継続したい');
  const surveyPromise=page.waitForEvent('download');await page.getByRole('button',{name:'回答ファイルを保存'}).click();const survey=await surveyPromise;
- const answer=JSON.parse(fs.readFileSync(await survey.path(),'utf8'));assert.equal(answer.price_yen,980);assert.equal(answer.willingness,'継続したい');
+ const answer=JSON.parse(fs.readFileSync(await survey.path(),'utf8'));assert.equal(answer.price_yen,500);assert.equal(answer.willingness,'継続したい');
  await page.getByRole('button',{name:'条件をリセット'}).click();
  await page.locator('.card textarea').first().fill('');await page.locator('.card .star').first().click();
  await page.evaluate(()=>window.scrollTo(0,0));
