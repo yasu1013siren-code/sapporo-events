@@ -112,7 +112,7 @@ import sys
 import time
 import unicodedata
 from dataclasses import dataclass, field
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -2164,12 +2164,8 @@ def collect_cho_kaguyahime_revival() -> Iterable[EventItem]:
         title="映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
         url=official_url,
         date_text=f"{datetime.now().year}年9月18日(金)～",
-        place="ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中",
+        place="札幌市内の映画館（中央区）",
         tags=["映画上映中", "アニメ映画", "公式イベント"],
-        links=[
-            {"label": "ローソン・ユナイテッドシネマ札幌", "url": "https://www.unitedcinemas.jp/sapporo/film.php?movie=13937"},
-            {"label": "TOHOシネマズすすきの", "url": "https://hlo.tohotheater.jp/net/schedule/089/TNPI2000J01.do"},
-        ],
     )
     log.info("超かぐや姫！(公式): 復活上映を自動取得")
 
@@ -2198,12 +2194,8 @@ def collect_manual_events() -> Iterable[EventItem]:
         {
             "title": "映画『超かぐや姫！』特別フォーマット版＆通常版 復活上映",
             "date_text": "2026年9月18日(金)〜",
-            "place": "ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中",
+            "place": "札幌市内の映画館（中央区）",
             "url": "https://www.cho-kaguyahime.com/theater/",
-            "links": [
-                {"label": "ローソン・ユナイテッドシネマ札幌", "url": "https://www.unitedcinemas.jp/sapporo/film.php?movie=13937"},
-                {"label": "TOHOシネマズすすきの", "url": "https://hlo.tohotheater.jp/net/schedule/089/TNPI2000J01.do"},
-            ],
             "release_date": date(2026, 9, 18),  # この日を迎えると自動的に「映画上映中」に切り替わる
         },
         # 他の年次フェスもここに追加できます。例:
@@ -2234,7 +2226,6 @@ def collect_manual_events() -> Iterable[EventItem]:
             date_text=ev.get("date_text", ""),
             place=ev.get("place", ""),
             tags=tags,
-            links=ev.get("links", []),
         )
     log.info(f"手動登録候補: {len(manual_events)}件（自動取得できない場合のみフォールバック）")
 
@@ -2319,7 +2310,7 @@ ANIME_MOVIE_HINTS = [
     "名探偵コナン", "鬼滅の刃", "呪術廻戦", "ワンピース", "ガンダム", "五等分の花嫁",
     "推しの子", "スパイファミリー", "スパイ×ファミリー", "ヒーローアカデミア", "チェンソーマン",
     "薬屋のひとりごと", "プリキュア", "ウルトラマン", "幻想水滸伝", "パウ・パトロール",
-    "ミニオンズ", "まどか", "マギカ", "超かぐや姫",
+    "ミニオンズ", "まどか", "マギカ",
 ]
 
 def _extract_title_from_schedule_page(url: str) -> Optional[str]:
@@ -2437,7 +2428,7 @@ def collect_upcoming_movies() -> Iterable[EventItem]:
     明記されているため、タイトルのキーワード判定に加えてジャンルに「アニメ」が
     含まれるかどうかでもアニメ判定を行う（キーワード判定より確実）。
     全国版のリストのため、必ずしも札幌の劇場での上映が確定しているとは限らない点に注意。"""
-    today = datetime.now().date()
+    today = datetime.now(timezone(timedelta(hours=9))).date()
     window_end = today + timedelta(days=60)
 
     # 対象期間をカバーする年月を列挙（当月から、window_endの月まで）
@@ -2472,7 +2463,7 @@ def collect_upcoming_movies() -> Iterable[EventItem]:
                     release_date = date(ey, em, ed)
                 except Exception:
                     continue
-                if release_date < today or release_date > window_end:
+                if release_date <= today or release_date > window_end:
                     continue
                 if title in upcoming:
                     continue
@@ -2713,30 +2704,13 @@ def parse_date_range(date_text: str, today: date):
     matches.extend(day_only_matches)
 
     dates = []
-    # 範囲内に明示年がある場合、後半の年省略日付はその年を引き継ぐ。
-    # 例: 2024年7月12日〜7月29日 → 後半も2024年（現在年/翌年にしない）。
-    explicit_dates = [(y, mo, d) for y, mo, d in matches if y is not None]
-    base_year = explicit_dates[0][0] if explicit_dates else None
-    base_month = explicit_dates[0][1] if explicit_dates else None
-
     for y, mo, d in matches:
-        if y is not None:
-            yy = y
-        elif base_year is not None:
-            yy = base_year
-            # 12月→1月のような年またぎ範囲だけ翌年にする。
-            if base_month is not None and base_month >= 10 and mo <= 3:
-                yy += 1
-        else:
-            yy = today.year
-
+        yy = y if y else today.year
         try:
             dt = date(yy, mo, d)
         except ValueError:
             continue
-
-        # 文中に年が一度も無い場合だけ、従来の年末年始補正を使う。
-        if y is None and base_year is None and dt < today - timedelta(days=60):
+        if y is None and dt < today - timedelta(days=60):
             dt = date(yy + 1, mo, d)
         dates.append(dt)
 
@@ -2745,24 +2719,30 @@ def parse_date_range(date_text: str, today: date):
     return min(dates), max(dates)
 
 
+def _is_future_movie_row(row, today: date) -> bool:
+    """公開予定映画は公開日の翌日以降ではなく、公開日当日から除外する。
+    DBに残った過去の作品も対象。全国公開日だけで札幌上映中には移さない。
+    """
+    categories = (row[6] or "").split(",")
+    if "🍿 公開予定映画" not in categories:
+        return True
+    release_date, _ = parse_date_range(row[2], today)
+    return release_date is not None and release_date > today
+
+
 def filter_within_month(rows: list, today: date, days: int = 30) -> list:
     """開催日が「今日 〜 今日+days日」に重なるものだけを残す。
     開催日を解析できない項目は表示しない。公開日を開催日の代用にもしない。"""
     window_end = today + timedelta(days=days)
     kept = []
     for row in rows:
-        date_text = row[2]
-        cats = (row[6] or "").split(",")
-
-        # 映画はカテゴリ側で上映中/公開予定を管理しているため、
-        # 通常イベントの日付フィルタでは落とさない。
-        if "🎬 映画" in cats or "🍿 公開予定映画" in cats:
-            kept.append(row)
+        if not _is_future_movie_row(row, today):
             continue
-
+        date_text = row[2]
         start, end = parse_date_range(date_text, today)
         if start is None:
-            # 通常イベントは「判断できないから残す」という旧安全策を使わない。
+            # 「判断できないから残す」という旧安全策は廃止。
+            # 開催日を解析できない項目は表示対象から除外する。
             continue
         if end is None:
             end = start
@@ -2781,6 +2761,8 @@ def split_started_and_upcoming(rows: list, today: date, soon_days: int = 7) -> t
     started, upcoming = [], []
     soon_cutoff = today + timedelta(days=soon_days)
     for row in rows:
+        if not _is_future_movie_row(row, today):
+            continue
         date_text = row[2]
         cats = (row[6] or "").split(",")
         if "🍿 公開予定映画" in cats:
@@ -2956,30 +2938,6 @@ def _dedupe_display_rows(rows: list) -> list:
 
 
 def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> str:
-    # 最終防衛ライン: HTML生成直前にも開催日を再検証する。
-    # DBや別経路から古い行が渡ってきても、終了済み・日付解析不能は表示しない。
-    today_date = datetime.strptime(today, "%Y-%m-%d").date()
-    safe_rows = []
-    for row in rows:
-        date_text = row[2] or ""
-        cats = (row[6] or "").split(",")
-
-        # 映画は上映状況カテゴリを優先する。日付文字列が解析できなくても
-        # 「🎬 映画」「🍿 公開予定映画」はここでは除外しない。
-        if "🎬 映画" in cats or "🍿 公開予定映画" in cats:
-            safe_rows.append(row)
-            continue
-
-        start, end = parse_date_range(date_text, today_date)
-        if start is None:
-            continue
-        if end is None:
-            end = start
-        if end < today_date:
-            continue
-        safe_rows.append(row)
-    rows = safe_rows
-
     if page_kind == "upcoming":
         page_title_suffix = "（開始前）"
         page_switch_link = '<a href="index.html">📍 開催中のイベント一覧はこちら →</a>'
@@ -2989,6 +2947,9 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
         page_switch_link = '<a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a>'
         category_order = [c for c in CATEGORY_ORDER if c != "🍿 公開予定映画"]
 
+    # 旧DBや直接HTML生成の経路でも、公開済み映画を再掲載しない。
+    report_date = datetime.strptime(today, "%Y-%m-%d").date()
+    rows = [row for row in rows if _is_future_movie_row(row, report_date)]
     # 同一イベントを複数の公式ソースから取得しても、表示は1カードに統合する。
     rows = _dedupe_display_rows(rows)
 
@@ -3001,6 +2962,7 @@ def build_html(rows, today: str, new_count: int, page_kind: str = "started") -> 
                 grouped[c].append((source, title, date_text, published_date, place, fee, url, first_seen, blurb, links_json))
 
     sections_html = ""
+    today_date = datetime.strptime(today, "%Y-%m-%d").date()
 
     for label in category_order:
         items = grouped[label]
@@ -3247,7 +3209,7 @@ def delete_replaced_manual_event(conn: sqlite3.Connection, item: EventItem) -> i
     return len(stale_urls)
 
 def main() -> None:
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
     log.info("=== 札幌市中央区 情報収集 開始 ===")
 
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
@@ -3334,7 +3296,7 @@ def main() -> None:
 
     # HTMLレポートを常に最新化（開催日が今日から60日以内のものだけ表示）
     rows = fetch_all_current(conn)
-    today_date = datetime.now().date()
+    today_date = date.fromisoformat(today)
     rows = filter_within_month(rows, today_date, days=60)  # 公開予定映画等も見えるよう2ヶ月分表示
     started_rows, upcoming_rows = split_started_and_upcoming(rows, today_date)
 
