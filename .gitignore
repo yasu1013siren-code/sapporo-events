@@ -1,0 +1,10 @@
+# Python-generated files
+__pycache__/
+*.pyc
+# Private trial responses must never be published.
+pro-beta-survey-*.json
+trial-responses/
+
+# SQLite read sidecars (do not publish)
+*.db-shm
+*.db-wal
