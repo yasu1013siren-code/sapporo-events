@@ -2681,6 +2681,79 @@ SOURCES = {
 }
 
 
+# 必須収集先は初回に別ファイルへ固定。以後、SOURCESから自動生成し直さない。
+REQUIRED_SOURCE_DEFAULTS = ['zepp_sapporo_official', 'hitaru_official', 'dome_official', 'satsuibe', 'chikaho', 'cube_garden', 'walkerplus_live', 'walkerplus_anime', 'eventernote_major', 'mitsukoshi', 'maruiimai', 'sapporo_factory', 'sapporo_parco_popup', 'stellarplace_popup', 'apia_popup', 'daimaru_sapporo_museum', 'daimaru_sapporo_popup', 'tanukikoji_popup', 'official_anime_manga_game_reverse', 'official_dedicated_site_discovery', 'movie_theaters', 'upcoming_movies', 'sapporo_autumnfest_official', 'kuwata_sapporo_official', 'coffee_pairing_official', 'cho_kaguyahime_official', 'manual']
+
+def _guard_write_json(path, value):
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
+
+def check_required_sources():
+    path = DATA_DIR / "required_sources.json"
+    if not path.exists():
+        _guard_write_json(path, {"required_sources": REQUIRED_SOURCE_DEFAULTS})
+    config = json.loads(path.read_text(encoding="utf-8"))
+    required = config["required_sources"]
+    if not isinstance(required, list) or not required or not all(isinstance(x, str) for x in required):
+        raise RuntimeError("required_sources.json の必須収集先リストが不正です")
+    missing = [name for name in required if name not in SOURCES or not callable(SOURCES[name])]
+    if missing:
+        _guard_write_json(DATA_DIR / "collection_health.json", {"status": "blocked", "missing_sources": missing})
+        raise RuntimeError("必須収集先が消えています。公開を停止: " + ", ".join(missing))
+    return required
+
+def publish_with_guard(pages, rows, stats, today):
+    baseline_path = DATA_DIR / "publication_baseline.json"
+    previous = json.loads(baseline_path.read_text(encoding="utf-8")) if baseline_path.exists() else {}
+    warnings = []
+    for name, result in stats.items():
+        old = previous.get("sources", {}).get(name, {}).get("fetched", 0)
+        if result["error"]:
+            warnings.append(name + ": 収集中エラー")
+        elif old > 0 and result["fetched"] == 0:
+            warnings.append(name + ": 取得件数が0件へ減少")
+        elif old >= 5 and result["fetched"] < old * 0.5:
+            warnings.append(name + ": 取得件数が半分未満")
+    old_rows = previous.get("rows", [])
+    # 終了したイベントは減少判定から外す。今も対象の前回掲載だけ比較する。
+    active_previous = filter_within_month(old_rows, date.fromisoformat(today), days=60) if old_rows else []
+    old_urls = {r[7] for r in active_previous}
+    new_urls = {r[7] for r in rows}
+    removed = old_urls - new_urls
+    counts = {}
+    for row in rows:
+        counts[row[0]] = counts.get(row[0], 0) + 1
+    vanished_sources = sorted({r[0] for r in active_previous} - set(counts))
+    blocked = bool(old_urls and (len(removed) >= max(3, len(old_urls) * 0.3) or vanished_sources))
+    if blocked:
+        warnings.append("前回の掲載が大量減少、または掲載元が0件になったためHTML更新を保留")
+    report = {"date": today, "status": "held" if blocked else "published", "sources": stats,
+              "published_counts": counts, "removed_urls": sorted(removed),
+              "vanished_sources": vanished_sources, "warnings": warnings,
+              "note": "fetchedは収集関数が返した件数。関数内部で除外した候補は含まない。"}
+    _guard_write_json(DATA_DIR / "collection_health.json", report)
+    with (DATA_DIR / "collection_health_history.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps(report, ensure_ascii=False) + "\n")
+    for warning in warnings:
+        log.warning("収集監視: %s", warning)
+    # 2ページとも生成が完了してから更新。保留時は候補だけ保存する。
+    for path, html in pages:
+        if blocked:
+            target = path.with_name(path.stem + ".candidate.html")
+        else:
+            target = path
+            if path.exists():
+                path.with_name(path.name + ".previous").write_bytes(path.read_bytes())
+        temp = target.with_name(target.name + ".tmp")
+        temp.write_text(html, encoding="utf-8")
+        temp.replace(target)
+        log.info("HTML%s: %s", "候補(更新保留)" if blocked else "更新", target)
+    if not blocked:
+        _guard_write_json(baseline_path, {"date": today, "rows": rows, "sources": stats})
+    return not blocked
+
+
 # ----------------------------------------------------------------------------
 # データベース
 # ----------------------------------------------------------------------------
@@ -3379,6 +3452,9 @@ def main() -> None:
     today = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
     log.info("=== 札幌市中央区 情報収集 開始 ===")
 
+    check_required_sources()  # DB変更・HTML公開より先に登録漏れを確認
+    source_stats = {}
+
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA journal_mode = WAL")
@@ -3397,8 +3473,10 @@ def main() -> None:
 
     for name, collector_fn in SOURCES.items():
         log.info(f"--- 情報源: {name} ---")
+        source_stats[name] = {"fetched": 0, "matched": 0, "excluded_category": 0, "excluded_manual_duplicate": 0, "error": ""}
         try:
             for item in collector_fn():
+                source_stats[name]["fetched"] += 1
                 total_checked += 1
                 # 404/410になった旧URLは、同一公式サイト内を検索して新URLへ自動修復。
                 old_item_url = item.url
@@ -3415,14 +3493,17 @@ def main() -> None:
                         item.blurb = ai_blurb or ""
                         ai_calls += 1
                 if not item.categories:
+                    source_stats[name]["excluded_category"] += 1
                     continue  # 飲食/音楽ライブ/アニメ/デパート催事 のどれにも該当しない情報は除外
 
                 # 手動登録は「自動取得できなかった場合だけ」のフォールバック。
                 # manualソースより前に自動ソースが見つけていたら、手動候補はスキップする。
                 if name == "manual" and _manual_title_key(item.title) in auto_replaced_manual_keys:
+                    source_stats[name]["excluded_manual_duplicate"] += 1
                     log.info(f"手動登録をスキップ（自動取得済み）: {item.title}")
                     continue
 
+                source_stats[name]["matched"] += 1
                 total_matched += 1
                 if upsert_event(conn, item, today):
                     new_items.append(item)
@@ -3440,6 +3521,7 @@ def main() -> None:
                         auto_replaced_manual_keys.add(manual_key)
                         delete_replaced_manual_event(conn, item)
         except Exception as e:
+            source_stats[name]["error"] = str(e)
             log.error(f"{name} の収集中にエラー: {e}")
 
     # 公式イベントの最終同期。収集経路や旧DBの残骸に左右されず、
@@ -3468,12 +3550,9 @@ def main() -> None:
     started_rows, upcoming_rows = split_started_and_upcoming(rows, today_date)
 
     html_started = build_html(started_rows, today, len(new_items), page_kind="started")
-    HTML_PATH.write_text(html_started, encoding="utf-8")
-    log.info(f"HTMLレポート(開催中)を更新しました → {HTML_PATH}")
-
     html_upcoming = build_html(upcoming_rows, today, len(new_items), page_kind="upcoming")
-    UPCOMING_HTML_PATH.write_text(html_upcoming, encoding="utf-8")
-    log.info(f"HTMLレポート(開始前)を更新しました → {UPCOMING_HTML_PATH}")
+    publish_with_guard([(HTML_PATH, html_started), (UPCOMING_HTML_PATH, html_upcoming)],
+                       rows, source_stats, today)
 
     conn.close()
 

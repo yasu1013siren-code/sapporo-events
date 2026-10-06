@@ -1,0 +1,31 @@
+{
+  "required_sources": [
+    "zepp_sapporo_official",
+    "hitaru_official",
+    "dome_official",
+    "satsuibe",
+    "chikaho",
+    "cube_garden",
+    "walkerplus_live",
+    "walkerplus_anime",
+    "eventernote_major",
+    "mitsukoshi",
+    "maruiimai",
+    "sapporo_factory",
+    "sapporo_parco_popup",
+    "stellarplace_popup",
+    "apia_popup",
+    "daimaru_sapporo_museum",
+    "daimaru_sapporo_popup",
+    "tanukikoji_popup",
+    "official_anime_manga_game_reverse",
+    "official_dedicated_site_discovery",
+    "movie_theaters",
+    "upcoming_movies",
+    "sapporo_autumnfest_official",
+    "kuwata_sapporo_official",
+    "coffee_pairing_official",
+    "cho_kaguyahime_official",
+    "manual"
+  ]
+}
