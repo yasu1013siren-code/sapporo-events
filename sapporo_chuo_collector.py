@@ -2495,7 +2495,165 @@ def collect_upcoming_movies() -> Iterable[EventItem]:
     log.info(f"映画館(公開予定) フィルタ前の全件({len(all_found_before_filter)}件): {all_found_before_filter[:30]}...")
 
 
+def parse_zepp_sapporo_schedule(soup) -> list:
+    """公式一覧の公演リンクだけから開催日・公演名を取得する。"""
+    from urllib.parse import urljoin, urlparse
+    events, seen = [], set()
+    for a in soup.find_all("a", href=True):
+        url = urljoin("https://www.zepp.co.jp/hall/sapporo/schedule/", a["href"])
+        parsed = urlparse(url)
+        if parsed.hostname != "www.zepp.co.jp" or parsed.path != "/hall/sapporo/schedule/single/":
+            continue
+        if url in seen:
+            continue
+        text = clean(a.get_text(" ", strip=True))
+        match = re.match(r"^(\d{4})\s+(\d{1,2})\.(\d{1,2})\s+(?:MON|TUE|WED|THU|FRI|SAT|SUN)\s+(.+)", text)
+        if not match:
+            continue
+        try:
+            held = date(*map(int, match.group(1, 2, 3)))
+        except ValueError:
+            continue
+        title = re.split(r"\[OPEN\]|\[START\]|\[PRICE\]|READ MORE", match.group(4), maxsplit=1)[0].strip()
+        if not title:
+            continue
+        seen.add(url)
+        events.append((title, held.isoformat(), url))
+    return events
+
+
+def collect_zepp_sapporo() -> Iterable[EventItem]:
+    """札幌公式の今月〜60日後が含まれる月を取得。個別ページの巡回は不要。"""
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+    cutoff = today + timedelta(days=60)
+    month = today.replace(day=1)
+    seen = set()
+    while month <= cutoff:
+        url = f"https://www.zepp.co.jp/hall/sapporo/schedule/?_m={month.month}&_y={month.year}"
+        soup = fetch(url)
+        if soup is not None:
+            for title, held, detail_url in parse_zepp_sapporo_schedule(soup):
+                if detail_url in seen or not today <= date.fromisoformat(held) <= cutoff:
+                    continue
+                seen.add(detail_url)
+                yield EventItem(source="Zepp Sapporo公式", title=title, url=detail_url,
+                                date_text=held, place="Zepp Sapporo（札幌市中央区）",
+                                tags=["音楽ライブ"], categories=["🎵 音楽ライブ"])
+        month = (month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    log.info(f"Zepp Sapporo公式: {len(seen)}件")
+
+
+def parse_dome_official_schedule(soup) -> list:
+    """公式の月別カレンダーを日付順に読む。日が戻った時だけ翌月へ進む。"""
+    from urllib.parse import urljoin
+    first_month = re.search(r"(\d{4})年\s*(\d{1,2})月", soup.get_text(" ", strip=True))
+    if not first_month:
+        return []
+    year, month = map(int, first_month.groups())
+    previous_day, events, seen = 0, [], set()
+    for a in soup.find_all("a", href=True):
+        text = clean(a.get_text(" ", strip=True))
+        match = re.match(r"^(\d{1,2})\s*[（(][月火水木金土日][）)]\s*(.*)$", text)
+        if not match:
+            continue
+        day = int(match.group(1))
+        if day < previous_day:
+            month += 1
+            if month == 13:
+                year, month = year + 1, 1
+        previous_day = day
+        body = match.group(2)
+        if not body.startswith("コンサート"):
+            continue
+        try:
+            held = date(year, month, day).isoformat()
+        except ValueError:
+            continue
+        title = body[len("コンサート"):].strip()
+        key = (held, title)
+        if title and key not in seen:
+            seen.add(key)
+            events.append((title, held, urljoin("https://www.sapporo-dome.co.jp/schedule/", a["href"])))
+    return events
+
+
+def collect_dome_official() -> Iterable[EventItem]:
+    soup = fetch("https://www.sapporo-dome.co.jp/schedule/")
+    if soup is None:
+        return
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+    for title, held, url in parse_dome_official_schedule(soup):
+        if today <= date.fromisoformat(held) <= today + timedelta(days=60):
+            # 同じ公演の複数日をURLの違いによらず保持する。
+            base = url.split("#", 1)[0]
+            yield EventItem(source="札幌ドーム公式", title=title,
+                            url=base + "#official-live-" + held, date_text=held,
+                            place="大和ハウスプレミストドーム（札幌ドーム）",
+                            tags=["音楽ライブ"], categories=["🎵 音楽ライブ"])
+
+
+def parse_hitaru_official_detail(soup):
+    fields = {}
+    for dt in soup.find_all("dt"):
+        dd = dt.find_next_sibling("dd")
+        if dd is not None:
+            fields[clean(dt.get_text())] = clean(dd.get_text(" ", strip=True))
+    title_node = soup.find("h3")
+    title = clean(title_node.get_text(" ", strip=True)) if title_node else ""
+    text = clean(soup.get_text(" ", strip=True))
+    if not title or fields.get("会場") != "劇場" or "音楽" not in text:
+        return None
+    if any(word in normalize(title) for word in CATEGORY_EXCLUDE.get("🎵 音楽ライブ", [])):
+        return None
+    date_text = fields.get("日時", "")
+    dates = re.findall(r"(\d{4})年(\d{1,2})月(\d{1,2})日", date_text)
+    # 「2026年10月15日・16日」の省略された年・月も同じ公演から補う。
+    if dates:
+        for day in re.findall(r"[・、]\s*(\d{1,2})日", date_text):
+            dates.append((dates[0][0], dates[0][1], day))
+    held = []
+    for y, m, d in dates:
+        try:
+            held.append(date(int(y), int(m), int(d)).isoformat())
+        except ValueError:
+            continue
+    return (title, held, fields.get("料金", "")) if held else None
+
+
+def collect_hitaru_official() -> Iterable[EventItem]:
+    from urllib.parse import urljoin, urlparse, parse_qs
+    listing = "https://www.sapporo-community-plaza.jp/event.php?kind=2&month=month_all"
+    soup = fetch(listing)
+    if soup is None:
+        return
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+    seen = set()
+    for a in soup.find_all("a", href=True):
+        url = urljoin(listing, a["href"])
+        parsed = urlparse(url)
+        if parsed.hostname != "www.sapporo-community-plaza.jp" or parsed.path != "/event.php":
+            continue
+        if "num" not in parse_qs(parsed.query) or url in seen:
+            continue
+        seen.add(url)
+        detail = fetch(url)
+        parsed_event = parse_hitaru_official_detail(detail) if detail is not None else None
+        if parsed_event:
+            title, dates, fee = parsed_event
+            for held in dates:
+                if today <= date.fromisoformat(held) <= today + timedelta(days=60):
+                    yield EventItem(source="hitaru公式", title=title, url=url + "#official-live-" + held,
+                                    date_text=held, place="札幌文化芸術劇場hitaru（札幌市中央区）",
+                                    fee=fee, tags=["音楽ライブ"], categories=["🎵 音楽ライブ"])
+        if len(seen) >= 60:
+            log.info("hitaru公式: 詳細巡回は1回60ページまで")
+            break
+
+
 SOURCES = {
+    "zepp_sapporo_official": collect_zepp_sapporo,
+    "hitaru_official": collect_hitaru_official,
+    "dome_official": collect_dome_official,
     "satsuibe": collect_satsuibe,
     "chikaho": collect_chikaho,
     "cube_garden": collect_cube_garden,
