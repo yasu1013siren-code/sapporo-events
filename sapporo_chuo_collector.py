@@ -2641,7 +2641,10 @@ def upsert_event(conn: sqlite3.Connection, item: EventItem, today: str) -> bool:
 def fetch_all_current(conn: sqlite3.Connection) -> list:
     """DB内の全件を、表示用にカテゴリ別へ振り分けて返す"""
     cur = conn.execute(
-        "SELECT source, title, date_text, published_date, place, fee, categories, url, first_seen, blurb, links "
+        "SELECT source, title, CASE "
+        "WHEN source = '映画館(上映中)' AND COALESCE(date_text, '') = '' "
+        "THEN last_seen || ' 上映情報確認（上映期間は劇場で確認）' "
+        "ELSE date_text END, published_date, place, fee, categories, url, first_seen, blurb, links "
         "FROM events ORDER BY date_text ASC, first_seen DESC"
     )
     rows = cur.fetchall()
@@ -2704,13 +2707,19 @@ def parse_date_range(date_text: str, today: date):
     matches.extend(day_only_matches)
 
     dates = []
+    # 年を省略した終了日は、現在年ではなく開催期間の明示年を引き継ぐ。
+    explicit_dates = [(y, mo, d) for y, mo, d in matches if y is not None]
+    base_year = explicit_dates[0][0] if explicit_dates else None
+    base_month = explicit_dates[0][1] if explicit_dates else None
     for y, mo, d in matches:
-        yy = y if y else today.year
+        yy = y if y is not None else (base_year if base_year is not None else today.year)
+        if y is None and base_year is not None and base_month >= 10 and mo <= 3:
+            yy += 1
         try:
             dt = date(yy, mo, d)
         except ValueError:
             continue
-        if y is None and dt < today - timedelta(days=60):
+        if y is None and base_year is None and dt < today - timedelta(days=60):
             dt = date(yy + 1, mo, d)
         dates.append(dt)
 
