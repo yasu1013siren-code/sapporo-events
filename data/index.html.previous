@@ -155,7 +155,7 @@
 <body>
 <header>
   <h1>🏙️ 札幌市中央区 情報収集レポート（開催中）</h1>
-  <div class="updated">最終更新: 2026-10-06　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 42件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="updated">最終更新: 2026-10-06　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 3件　/　このページはスクリプト実行のたびに自動更新されます</div>
   <div class="page-switch"><a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a></div>
 </header>
 <main>
@@ -299,7 +299,7 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://www.sapporo-community-plaza.jp/event.php?num=5345#official-live-2026-10-12" target="_blank" rel="noopener">hitaru公式 ↗</a></div>
             </div>
-            </div><h2>🎬 映画 <span class="count">(23件)</span></h2><div class="cards">
+            </div><h2>🎬 映画 <span class="count">(26件)</span></h2><div class="cards">
             <div class="card new">
               <span class="badge">NEW</span>
               <div class="card-title">AURORAコンサート・フィルム『What Happened To The Earth? - Live From Mexico City』</div>
@@ -573,11 +573,39 @@
               <div class="card-meta">
                 📅 開催: 2026-10-06 上映情報確認（上映期間は劇場で確認）<br>
                 
-                📍 札幌シネマフロンティア（中央区）で上映中<br>
+                📍 札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
                 <span class="source">映画館(上映中)</span>
               </div>
-              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a></div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th592/" target="_blank" rel="noopener">札幌シネマフロンティア ↗</a><a class="card-link" href="https://press.moviewalker.jp/mv92048/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">機動警察パトレイバー the Movie TOHOシネマズ</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-06 上映情報確認（上映期間は劇場で確認）<br>
+                
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
+                
+                <span class="source">映画館(上映中)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv17928/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">機動警察パトレイバー2 the Movie TOHOシネマズ</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-06 上映情報確認（上映期間は劇場で確認）<br>
+                
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
+                
+                <span class="source">映画館(上映中)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv27519/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
             </div>
             
             <div class="card">
@@ -620,6 +648,20 @@
                 <span class="source">映画館(上映中)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv37699/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">踊る大捜査線 THE MOVIE2 レインボーブリッジを封鎖せよ！ TOHOシネマズ</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-06 上映情報確認（上映期間は劇場で確認）<br>
+                
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
+                
+                <span class="source">映画館(上映中)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv40043/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
             </div>
             </div><h2>🏬 デパート催事 <span class="count">(6件)</span></h2><div class="cards">
             <div class="card">
