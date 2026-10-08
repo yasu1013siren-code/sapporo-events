@@ -155,25 +155,11 @@
 <body>
 <header>
   <h1>🏙️ 札幌市中央区 情報収集レポート（開始前）</h1>
-  <div class="updated">最終更新: 2026-10-06　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 3件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="updated">最終更新: 2026-10-07　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 3件　/　このページはスクリプト実行のたびに自動更新されます</div>
   <div class="page-switch"><a href="index.html">📍 開催中のイベント一覧はこちら →</a></div>
 </header>
 <main>
 <h2>🎪 中心部のイベント情報</h2><p class="empty">現在、該当する情報はありません。</p><h2>🖼️ 展示会 <span class="count">(3件)</span></h2><div class="cards">
-            <div class="card">
-              
-              <div class="card-title">鋼の錬金術師×黄泉のツガイ展</div>
-              
-              <div class="card-meta">
-                📅 開催: 2026年10月14日(水)<br>
-                
-                📍 大丸札幌店<br>
-                
-                <span class="source">大丸・松坂屋(展覧会) / 大丸・松坂屋公式(展覧会)</span>
-              </div>
-              <div class="card-links"><a class="card-link" href="https://dmdepart.jp/museum/#5ce65012d70d" target="_blank" rel="noopener">大丸・松坂屋(展覧会) / 大丸・松坂屋公式(展覧会) ↗</a></div>
-            </div>
-            
             <div class="card">
               
               <div class="card-title">アトリエBeehive展2026</div>
@@ -200,6 +186,20 @@
                 <span class="source">サツイベ(中央区)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/chuou-ku/83669.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">第117回 北海道大学美術部黒百合会展</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026年 11月 18日 ～ 11月 22日<br>
+                
+                📍 札幌市民ギャラリー<br>
+                💰 0円 歴史ある北大美術部黒百合会の、117回目の展覧会が11月に行われます。今年<br>
+                <span class="source">サツイベ(中央区)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/chuou-ku/83778.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
             </div>
             </div><h2>🛍️ ポップアップストア <span class="count">(2件)</span></h2><div class="cards">
             <div class="card">
@@ -229,9 +229,9 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://sapporofactory.jp/event/detail/654" target="_blank" rel="noopener">サッポロファクトリー(催事) ↗</a></div>
             </div>
-            </div><h2>🎮 アニメ・ゲーム関連ポップアップストア</h2><p class="empty">現在、該当する情報はありません。</p><h2>🎵 音楽ライブ <span class="count">(52件)</span></h2><div class="cards">
-            <div class="card new">
-              <span class="badge">NEW</span>
+            </div><h2>🎮 アニメ・ゲーム関連ポップアップストア</h2><p class="empty">現在、該当する情報はありません。</p><h2>🎵 音楽ライブ <span class="count">(53件)</span></h2><div class="cards">
+            <div class="card">
+              
               <div class="card-title">go!go!vanillas go!go!vanillas presents「ぼくらのタイマン上等ツアー」</div>
               
               <div class="card-meta">
@@ -244,8 +244,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=157824" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">go!go!vanillas w/PEOPLE 1 go!go!vanillas presents「ぼくらのタイマン上等ツアー」</div>
               
               <div class="card-meta">
@@ -286,8 +286,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/456639" target="_blank" rel="noopener">イベンターノート(北海きたえーる) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">宇都宮隆 LIVE UTSU BAR TOUR 2026 〜それゆけ歌酔曲!!〜ギア-レイワ8『オータムこい』</div>
               
               <div class="card-meta">
@@ -314,8 +314,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/456641" target="_blank" rel="noopener">イベンターノート(北海きたえーる) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">日食なつこ ⽇⾷なつこ 未発表曲ツアー「エリア未来2 “ブラックホール”」</div>
               
               <div class="card-meta">
@@ -328,8 +328,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=155996" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">レトロリロン レトロリロン Zepp Tour 2026「アブノーマルライフハック」</div>
               
               <div class="card-meta">
@@ -342,8 +342,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=157346" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">Number_i LIVE TOUR No.Ⅲ</div>
               
               <div class="card-meta">
@@ -356,8 +356,8 @@
               <div class="card-links"><a class="card-link" href="https://www.sapporo-dome.co.jp/schedule/detail/?date=20261024#official-live-2026-10-24" target="_blank" rel="noopener">札幌ドーム公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ヤバイTシャツ屋さん ヤバイTシャツ屋さん &quot;Magical Tank-top Parade&quot; ONE-MAN TOUR 2026</div>
               
               <div class="card-meta">
@@ -370,8 +370,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=156569" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">TRIPLANE TRIPLANE 22nd Anniversary Special LIVE &quot;Luv Chamber&quot;</div>
               
               <div class="card-meta">
@@ -384,8 +384,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=156658" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">Snow Man DOME TOUR 2026-2027 ALL SUITE</div>
               
               <div class="card-meta">
@@ -426,8 +426,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93990/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">杉山清貴 杉山清貴 SOLO DEBUT 40TH ANNIVERSARY TOUR</div>
               
               <div class="card-meta">
@@ -454,8 +454,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/489825" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">04 Limited Sazabys 04 Limited Sazabys ONE MAN TOUR 2026</div>
               
               <div class="card-meta">
@@ -496,8 +496,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/489826" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">森山直太朗 森山直太朗 Zepp TOURS 2026『Zepp de rolling DOSA 〜すべからく愛々〜』</div>
               
               <div class="card-meta">
@@ -510,8 +510,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=162082" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">WATWING WATWING Zepp Live Tour「love」</div>
               
               <div class="card-meta">
@@ -538,8 +538,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/457842" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">sumika sumika Live Tour 2026 『Flügel Letter』</div>
               
               <div class="card-meta">
@@ -552,8 +552,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=158385" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">Hump Back Hump Back pre. &quot;HELLO ANEW TOUR&quot;2026-2027</div>
               
               <div class="card-meta">
@@ -580,8 +580,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/489957" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">乃木坂46 乃⽊坂46 6期⽣全国ツアー2026 [お問合せ] ミュージックファン 011-799-1000</div>
               
               <div class="card-meta">
@@ -622,8 +622,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/467393" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">新しい学校のリーダーズ From AG! with Love 〜ライブハウスより愛を込めて〜</div>
               
               <div class="card-meta">
@@ -664,8 +664,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/481004" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">レキシ レキシ アコースティックツアー 2026 ～稲･遷都･ワールド～</div>
               
               <div class="card-meta">
@@ -678,8 +678,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=160985" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">YOASOBI ASIA 10-CITY DOME &amp; STADIUM TOUR 2026-2027 “超惑星”</div>
               
               <div class="card-meta">
@@ -706,8 +706,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/458277" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">神はサイコロを振らない Zepp Tour 2026 &quot;View From The Soyuz&quot;</div>
               
               <div class="card-meta">
@@ -748,8 +748,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/458278" target="_blank" rel="noopener">イベンターノート(大和ハウスプレミストドーム（札幌ドーム）) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ねぐせ。 ねぐせ。秋冬ワンマンツアー2026「君を強く抱きしめたいんだ！」</div>
               
               <div class="card-meta">
@@ -762,8 +762,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=156884" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ELLEGARDEN Bad For Education Tour II (2026)</div>
               
               <div class="card-meta">
@@ -804,8 +804,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/490235" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ASIAN KUNG-FU GENERATION ASIAN KUNG-FU GENERATION Tour 2026 &quot;Midage Fanclub&quot;</div>
               
               <div class="card-meta">
@@ -832,8 +832,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94063/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">jo0ji jo0ji one-man tour 2026 「いかり」</div>
               
               <div class="card-meta">
@@ -860,8 +860,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/461139" target="_blank" rel="noopener">イベンターノート(札幌文化芸術劇場hitaru) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">しるこ siruko Fan Meeting Tour 2026〜みんなでしるこの部屋〜</div>
               
               <div class="card-meta">
@@ -888,8 +888,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93992/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">モナキ MONAKI 1st Tour 2026「モナキやで☆しらんけど」追加公演 Supported by Dr.ルルルン株式会社</div>
               
               <div class="card-meta">
@@ -902,8 +902,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=161460" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ももいろクローバーZ NORTHERN LIGHTS CHRISTMAS GIG at Zepp Sapporo</div>
               
               <div class="card-meta">
@@ -930,8 +930,8 @@
               <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/490568" target="_blank" rel="noopener">イベンターノート(Zepp Sapporo) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">lecca lecca Live Tour 2026 &quot;Lovers&amp;Dreamers&quot;</div>
               
               <div class="card-meta">
@@ -944,8 +944,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=160618" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ヒルクライム ヒルクライム ZEPP TOUR「2026」</div>
               
               <div class="card-meta">
@@ -957,21 +957,21 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=159809" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
-            </div><h2>🍿 公開予定映画 <span class="count">(124件)</span></h2><div class="cards">
-            <div class="card">
-              
-              <div class="card-title">クイーン：ブダペスト</div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">あらき あらき LIVE ARK ODYSSEY</div>
               
               <div class="card-meta">
-                📅 開催: 2026年10月7日公開<br>
+                📅 開催: 2026-12-06<br>
                 
-                📍 全国公開予定　※札幌での上映は劇場発表をご確認ください<br>
+                📍 Zepp Sapporo（札幌市中央区）<br>
                 
-                <span class="source">映画館(公開予定・全国版)</span>
+                <span class="source">Zepp Sapporo公式</span>
               </div>
-              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94178/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
+              <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=159472" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
-            
+            </div><h2>🍿 公開予定映画 <span class="count">(123件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">DIGGER／ディガー</div>
@@ -1392,8 +1392,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92743/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ピリオド</div>
               
               <div class="card-meta">
@@ -2526,8 +2526,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93600/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">三代目 J SOUL BROTHERS 15TH ANNIVERSARY &quot;JSB FOREVER ～ONE～&quot; THE MOVIE</div>
               
               <div class="card-meta">
@@ -2582,8 +2582,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94111/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">HOLE／ホール 呼び戻したら、戻れない</div>
               
               <div class="card-meta">
@@ -2596,8 +2596,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94176/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">お姉ちゃんの翠くん</div>
               
               <div class="card-meta">
@@ -2610,8 +2610,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93837/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">バイオレント・ナイト2</div>
               
               <div class="card-meta">
@@ -2624,8 +2624,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94109/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ビリーと魔法のはじまり</div>
               
               <div class="card-meta">
@@ -2638,8 +2638,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93641/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">ピリオン</div>
               
               <div class="card-meta">
@@ -2652,8 +2652,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93796/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">彼女にあったら、よろしくと</div>
               
               <div class="card-meta">
@@ -2666,8 +2666,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94366/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">雨のエトランゼ</div>
               
               <div class="card-meta">
@@ -2680,8 +2680,8 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94432/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">静かな友人</div>
               
               <div class="card-meta">
