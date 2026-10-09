@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-09",
   "status": "published",
   "sources": {
     "zepp_sapporo_official": {
-      "fetched": 35,
-      "matched": 35,
+      "fetched": 34,
+      "matched": 34,
       "excluded_category": 0,
       "excluded_manual_duplicate": 0,
       "error": ""
@@ -24,8 +24,8 @@
       "error": ""
     },
     "satsuibe": {
-      "fetched": 63,
-      "matched": 8,
+      "fetched": 64,
+      "matched": 9,
       "excluded_category": 55,
       "excluded_manual_duplicate": 0,
       "error": ""
@@ -80,8 +80,8 @@
       "error": ""
     },
     "sapporo_factory": {
-      "fetched": 12,
-      "matched": 12,
+      "fetched": 11,
+      "matched": 11,
       "excluded_category": 0,
       "excluded_manual_duplicate": 0,
       "error": ""
@@ -115,9 +115,9 @@
       "error": ""
     },
     "daimaru_sapporo_popup": {
-      "fetched": 0,
+      "fetched": 1,
       "matched": 0,
-      "excluded_category": 0,
+      "excluded_category": 1,
       "excluded_manual_duplicate": 0,
       "error": ""
     },
@@ -143,15 +143,15 @@
       "error": ""
     },
     "movie_theaters": {
-      "fetched": 51,
-      "matched": 51,
+      "fetched": 45,
+      "matched": 45,
       "excluded_category": 0,
       "excluded_manual_duplicate": 0,
       "error": ""
     },
     "upcoming_movies": {
-      "fetched": 126,
-      "matched": 126,
+      "fetched": 123,
+      "matched": 123,
       "excluded_category": 0,
       "excluded_manual_duplicate": 0,
       "error": ""
@@ -193,7 +193,7 @@
     }
   },
   "published_counts": {
-    "映画館(上映中)": 24,
+    "映画館(上映中)": 18,
     "丸井今井札幌本店(催事)": 1,
     "Zepp Sapporo公式": 35,
     "hitaru公式": 1,
@@ -205,10 +205,10 @@
     "札幌PARCO": 3,
     "札幌PARCO(ポップアップ)": 3,
     "サッポロファクトリー(催事)": 11,
-    "サツイベ(中央区)": 8,
+    "サツイベ(中央区)": 9,
     "大丸・松坂屋(展覧会)": 2,
     "大丸・松坂屋公式(展覧会)": 1,
-    "映画館(公開予定・全国版)": 127
+    "映画館(公開予定・全国版)": 123
   },
   "removed_urls": [],
   "vanished_sources": [],

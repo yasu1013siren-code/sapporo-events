@@ -155,11 +155,11 @@
 <body>
 <header>
   <h1>🏙️ 札幌市中央区 情報収集レポート（開始前）</h1>
-  <div class="updated">最終更新: 2026-10-07　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 3件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="updated">最終更新: 2026-10-08　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 5件　/　このページはスクリプト実行のたびに自動更新されます</div>
   <div class="page-switch"><a href="index.html">📍 開催中のイベント一覧はこちら →</a></div>
 </header>
 <main>
-<h2>🎪 中心部のイベント情報</h2><p class="empty">現在、該当する情報はありません。</p><h2>🖼️ 展示会 <span class="count">(3件)</span></h2><div class="cards">
+<h2>🎪 中心部のイベント情報</h2><p class="empty">現在、該当する情報はありません。</p><h2>🖼️ 展示会 <span class="count">(4件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">アトリエBeehive展2026</div>
@@ -190,6 +190,20 @@
             
             <div class="card new">
               <span class="badge">NEW</span>
+              <div class="card-title">トランク機械シアター ワークショップ＆人形劇公演</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026年 11月 1日<br>
+                
+                📍 北海道立近代美術館<br>
+                💰 0円<br>
+                <span class="source">サツイベ(中央区)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/chuou-ku/83820.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
+            </div>
+            
+            <div class="card">
+              
               <div class="card-title">第117回 北海道大学美術部黒百合会展</div>
               
               <div class="card-meta">
@@ -230,20 +244,6 @@
               <div class="card-links"><a class="card-link" href="https://sapporofactory.jp/event/detail/654" target="_blank" rel="noopener">サッポロファクトリー(催事) ↗</a></div>
             </div>
             </div><h2>🎮 アニメ・ゲーム関連ポップアップストア</h2><p class="empty">現在、該当する情報はありません。</p><h2>🎵 音楽ライブ <span class="count">(53件)</span></h2><div class="cards">
-            <div class="card">
-              
-              <div class="card-title">go!go!vanillas go!go!vanillas presents「ぼくらのタイマン上等ツアー」</div>
-              
-              <div class="card-meta">
-                📅 開催: 2026-10-15<br>
-                
-                📍 Zepp Sapporo（札幌市中央区）<br>
-                
-                <span class="source">Zepp Sapporo公式</span>
-              </div>
-              <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=157824" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
-            </div>
-            
             <div class="card">
               
               <div class="card-title">go!go!vanillas w/PEOPLE 1 go!go!vanillas presents「ぼくらのタイマン上等ツアー」</div>
@@ -382,6 +382,20 @@
                 <span class="source">Zepp Sapporo公式</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=156658" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">渡辺 匠 【渡辺匠ワンマンライブ2026】Just a Live 〜今日という日が歌になる〜</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-28<br>
+                
+                📍 Zepp Sapporo（札幌市中央区）<br>
+                
+                <span class="source">Zepp Sapporo公式</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=160935" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
             <div class="card">
@@ -958,8 +972,8 @@
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=159809" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
             
-            <div class="card new">
-              <span class="badge">NEW</span>
+            <div class="card">
+              
               <div class="card-title">あらき あらき LIVE ARK ODYSSEY</div>
               
               <div class="card-meta">
@@ -971,7 +985,7 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=159472" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
-            </div><h2>🍿 公開予定映画 <span class="count">(123件)</span></h2><div class="cards">
+            </div><h2>🍿 公開予定映画 <span class="count">(125件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">DIGGER／ディガー</div>
@@ -1277,7 +1291,7 @@
                 
                 <span class="source">映画館(公開予定・全国版)</span>
               </div>
-              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/list/coming/2026/10/p2/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/list/coming/2026/10/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
             <div class="card">
@@ -1418,6 +1432,20 @@
                 <span class="source">映画館(公開予定・全国版)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93703/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
+            </div>
+            
+            <div class="card">
+              
+              <div class="card-title">先行上映</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026年10月23日公開<br>
+                
+                📍 全国公開予定　※札幌での上映は劇場発表をご確認ください<br>
+                
+                <span class="source">映画館(公開予定・全国版)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/list/coming/2026/10/p2/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
             <div class="card">
@@ -2370,6 +2398,20 @@
                 <span class="source">映画館(公開予定・全国版)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93663/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
+            </div>
+            
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">ザ・ファーザー・ミスアドベンチャー・オブ・クリフ・ブース</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026年11月25日公開<br>
+                
+                📍 全国公開予定　※札幌での上映は劇場発表をご確認ください<br>
+                
+                <span class="source">映画館(公開予定・全国版)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv94414/" target="_blank" rel="noopener">映画館(公開予定・全国版) ↗</a></div>
             </div>
             
             <div class="card">
