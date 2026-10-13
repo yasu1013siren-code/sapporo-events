@@ -155,27 +155,13 @@
 <body>
 <header>
   <h1>🏙️ 札幌市中央区 情報収集レポート（開催中）</h1>
-  <div class="updated">最終更新: 2026-10-10　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 1件　/　このページはスクリプト実行のたびに自動更新されます</div>
+  <div class="updated">最終更新: 2026-10-11　/　表示期間: 今日から2ヶ月(60日)以内に開催・公開のもの　/　今回の新着: 1件　/　このページはスクリプト実行のたびに自動更新されます</div>
   <div class="page-switch"><a href="upcoming.html">🔜 まだ始まっていないイベント一覧はこちら →</a></div>
 </header>
 <main>
-<h2>🎪 中心部のイベント情報 <span class="count">(2件)</span></h2><div class="cards">
+<h2>🎪 中心部のイベント情報 <span class="count">(1件)</span></h2><div class="cards">
             <div class="card">
               
-              <div class="card-title">さとうみつろう氏presents まんまるマルシェ in 札幌2026</div>
-              
-              <div class="card-meta">
-                📅 開催: 2026年 10月 10日<br>
-                
-                📍 さっぽろテレビ塔<br>
-                💰 0円 さとうみつろう氏presentsまんまるマルシェ in 札幌2026☝️入<br>
-                <span class="source">サツイベ(中央区)</span>
-              </div>
-              <div class="card-links"><a class="card-link" href="https://sapporo.magazine.events/area/chuou-ku/83723.html" target="_blank" rel="noopener">サツイベ(中央区) ↗</a></div>
-            </div>
-            
-            <div class="card">
-              <span class="badge badge-soon">まもなく開催</span>
               <div class="card-title">【癒しマルシェ】〜自分に還る大切な時間〜</div>
               
               <div class="card-meta">
@@ -243,7 +229,7 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://dmdepart.jp/museum/#5ce65012d70d" target="_blank" rel="noopener">大丸・松坂屋(展覧会) / 大丸・松坂屋公式(展覧会) ↗</a></div>
             </div>
-            </div><h2>🛍️ ポップアップストア <span class="count">(6件)</span></h2><div class="cards">
+            </div><h2>🛍️ ポップアップストア <span class="count">(5件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">2026.10.8 2026.10.12 ALLEY TOKYO SAPPORO POPUP B2F POPUP SPACE 「GATE」</div>
@@ -256,20 +242,6 @@
                 <span class="source">札幌PARCO(ポップアップ)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://sapporo.parco.jp/event/detail/?id=38687" target="_blank" rel="noopener">札幌PARCO(ポップアップ) ↗</a></div>
-            </div>
-            
-            <div class="card">
-              
-              <div class="card-title">2026.10.10 2026.10.10 S∀N POPUP STORE 7F 特設会場</div>
-              
-              <div class="card-meta">
-                📅 開催: 2026.10.10 - 2026.10.10<br>
-                
-                📍 札幌PARCO<br>
-                
-                <span class="source">札幌PARCO</span>
-              </div>
-              <div class="card-links"><a class="card-link" href="https://sapporo.parco.jp/event/detail/?id=38953" target="_blank" rel="noopener">札幌PARCO ↗</a></div>
             </div>
             
             <div class="card">
@@ -327,9 +299,9 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://sapporofactory.jp/event/detail/654" target="_blank" rel="noopener">サッポロファクトリー(催事) ↗</a></div>
             </div>
-            </div><h2>🎮 アニメ・ゲーム関連ポップアップストア</h2><p class="empty">現在、該当する情報はありません。</p><h2>🎵 音楽ライブ <span class="count">(7件)</span></h2><div class="cards">
+            </div><h2>🎮 アニメ・ゲーム関連ポップアップストア</h2><p class="empty">現在、該当する情報はありません。</p><h2>🎵 音楽ライブ <span class="count">(9件)</span></h2><div class="cards">
             <div class="card">
-              <span class="badge badge-soon">まもなく開催</span>
+              
               <div class="card-title">女王蜂 女王蜂 全国ツアー2026「星」</div>
               
               <div class="card-meta">
@@ -425,13 +397,41 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=153003" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
             </div>
-            </div><h2>🎬 映画 <span class="count">(18件)</span></h2><div class="cards">
+            
+            <div class="card">
+              <span class="badge badge-soon">まもなく開催</span>
+              <div class="card-title">BUMP OF CHICKEN TOUR 2026 北海道公演 DAY2</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-18 (日)<br>
+                
+                📍 北海きたえーる<br>
+                
+                <span class="source">イベンターノート(北海きたえーる)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://www.eventernote.com/events/456641" target="_blank" rel="noopener">イベンターノート(北海きたえーる) ↗</a></div>
+            </div>
+            
+            <div class="card">
+              <span class="badge badge-soon">まもなく開催</span>
+              <div class="card-title">日食なつこ ⽇⾷なつこ 未発表曲ツアー「エリア未来2 “ブラックホール”」</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-18<br>
+                
+                📍 Zepp Sapporo（札幌市中央区）<br>
+                
+                <span class="source">Zepp Sapporo公式</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://www.zepp.co.jp/hall/sapporo/schedule/single/?rid=155996" target="_blank" rel="noopener">Zepp Sapporo公式 ↗</a></div>
+            </div>
+            </div><h2>🎬 映画 <span class="count">(19件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">ALWAYS LALISA TOHOシネマズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -445,7 +445,7 @@
               <div class="card-title">Michael／マイケル</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -459,7 +459,7 @@
               <div class="card-title">あの星が降る丘で、君とまた出会いたい。</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
@@ -473,7 +473,7 @@
               <div class="card-title">オデュッセイア</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -487,7 +487,7 @@
               <div class="card-title">キングダム 魂の決戦</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -501,7 +501,7 @@
               <div class="card-title">バックルームズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -515,7 +515,7 @@
               <div class="card-title">ママがもうこの世界にいなくても 私の命の日記</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -529,7 +529,7 @@
               <div class="card-title">ミニオンズ＆モンスターズ TOHOシネマズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -538,12 +538,26 @@
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv92494/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
             </div>
             
+            <div class="card new">
+              <span class="badge">NEW</span>
+              <div class="card-title">僕のヒーローアカデミア キャラクターマッチアップ名エピソード上映 TOHOシネマズ</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
+                
+                📍 TOHOシネマズすすきの（中央区）で上映中<br>
+                
+                <span class="source">映画館(上映中)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv93138/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
+            </div>
+            
             <div class="card">
               
               <div class="card-title">劇場版 魔法少女まどか☆マギカ 〈ワルプルギスの廻天〉</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -557,7 +571,7 @@
               <div class="card-title">愛し合ってるかい？ 忌野清志郎が教えてくれた</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 札幌シネマフロンティア（中央区）で上映中<br>
                 
@@ -571,7 +585,7 @@
               <div class="card-title">新劇場版 銀魂 -吉原大炎上-</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア（中央区）で上映中<br>
                 
@@ -585,7 +599,7 @@
               <div class="card-title">映画ちいかわ 人魚の島のひみつ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -599,7 +613,7 @@
               <div class="card-title">映画クレヨンしんちゃん 奇々怪々！オラの妖怪バケ～ション</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -613,7 +627,7 @@
               <div class="card-title">機動警察パトレイバー the Movie TOHOシネマズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -627,7 +641,7 @@
               <div class="card-title">機動警察パトレイバー2 the Movie TOHOシネマズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -641,7 +655,7 @@
               <div class="card-title">白鳥とコウモリ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・札幌シネマフロンティア・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -655,7 +669,7 @@
               <div class="card-title">超かぐや姫！</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 ローソン・ユナイテッドシネマ札幌・TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -669,7 +683,7 @@
               <div class="card-title">踊る大捜査線 THE MOVIE2 レインボーブリッジを封鎖せよ！ TOHOシネマズ</div>
               
               <div class="card-meta">
-                📅 開催: 2026-10-10 上映情報確認（上映期間は劇場で確認）<br>
+                📅 開催: 2026-10-11 上映情報確認（上映期間は劇場で確認）<br>
                 
                 📍 TOHOシネマズすすきの（中央区）で上映中<br>
                 
@@ -677,7 +691,7 @@
               </div>
               <div class="card-links"><a class="card-link" href="https://press.moviewalker.jp/mv40043/schedule/th828/" target="_blank" rel="noopener">TOHOシネマズすすきの ↗</a></div>
             </div>
-            </div><h2>🏬 デパート催事 <span class="count">(8件)</span></h2><div class="cards">
+            </div><h2>🏬 デパート催事 <span class="count">(9件)</span></h2><div class="cards">
             <div class="card">
               
               <div class="card-title">岩合光昭の世界ネコ歩き ヨーロッパの空の下</div>
@@ -788,6 +802,20 @@
                 <span class="source">サッポロファクトリー(催事)</span>
               </div>
               <div class="card-links"><a class="card-link" href="https://sapporofactory.jp/event/detail/651" target="_blank" rel="noopener">サッポロファクトリー(催事) ↗</a></div>
+            </div>
+            
+            <div class="card">
+              <span class="badge badge-soon">まもなく開催</span>
+              <div class="card-title">SAPPORO GIRLS FLIGHT vol.19 ~サッポロファクトリーアトリウムSP~</div>
+              
+              <div class="card-meta">
+                📅 開催: 2026年10月18日(日)<br>
+                
+                📍 サッポロファクトリー<br>
+                
+                <span class="source">サッポロファクトリー(催事)</span>
+              </div>
+              <div class="card-links"><a class="card-link" href="https://sapporofactory.jp/event/detail/647" target="_blank" rel="noopener">サッポロファクトリー(催事) ↗</a></div>
             </div>
             </div>
 </main>
